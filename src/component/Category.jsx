@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import "../assets/css/category.css";
+import "../assets/css/Category.css";
 
 function Category() {
   const categories = [
