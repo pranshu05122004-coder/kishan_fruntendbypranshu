@@ -21,7 +21,7 @@ import Footer from "./component/Footer";
 
 // Authentication
 import Register from "./component/Register";
-import Login from "./component/Login";
+import Login from "./component/login";
 import Profile from "./component/Profile";
 
 // Cart, Wishlist & Products
