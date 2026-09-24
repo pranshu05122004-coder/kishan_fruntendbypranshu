@@ -1,0 +1,117 @@
+.registration-section {
+  padding: 90px 20px;
+  background: #f8f8f8;
+  min-height: 100vh;
+}
+
+.registration-container {
+  max-width: 600px;
+  margin: auto;
+}
+
+.registration-header {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.registration-label {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #e63946;
+}
+
+.registration-header h2 {
+  font-size: 38px;
+  margin: 10px 0;
+  font-weight: 700;
+}
+
+.registration-header h2 span {
+  color: #e63946;
+}
+
+.registration-line {
+  width: 60px;
+  height: 3px;
+  background: #e63946;
+  margin: 15px auto;
+}
+
+.registration-header p {
+  color: #777;
+  margin: 0;
+}
+
+.registration-card {
+  background: #fff;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.08);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #222;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid #ddd;
+  border-radius: 7px;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  transition: 0.3s;
+}
+
+.form-group input:focus {
+  border-color: #e63946;
+  box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+}
+
+.register-btn {
+  width: 100%;
+  border: none;
+  padding: 14px;
+  border-radius: 7px;
+  background: #e63946;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.register-btn:hover {
+  background: #c92f3b;
+}
+
+.login-link {
+  text-align: center;
+  margin-top: 25px;
+  color: #666;
+}
+
+.login-link a {
+  color: #e63946;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+@media (max-width: 576px) {
+  .registration-card {
+    padding: 25px 20px;
+  }
+
+  .registration-header h2 {
+    font-size: 30px;
+  }
+}

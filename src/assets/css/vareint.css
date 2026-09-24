@@ -1,0 +1,501 @@
+/* =========================================
+   VARIANT SECTION
+========================================= */
+
+.variant-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.variant-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.variant-section-header h3 {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 700;
+  color: #222;
+  letter-spacing: -0.3px;
+}
+
+.variant-total {
+  background: #f5f5f5;
+  color: #555;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+
+/* =========================================
+   VARIANT GRID
+========================================= */
+
+.variant-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+
+/* =========================================
+   VARIANT CARD
+========================================= */
+
+.variant-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  min-height: 105px;
+  padding: 18px;
+
+  background: #ffffff;
+  border: 1px solid #e7e7e7;
+  border-radius: 14px;
+
+  cursor: pointer;
+
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+
+  overflow: hidden;
+}
+
+
+/* LEFT RED LINE */
+
+.variant-card::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+
+  width: 4px;
+  height: 100%;
+
+  background: #c62828;
+
+  transform: scaleY(0);
+  transform-origin: bottom;
+
+  transition: transform 0.25s ease;
+}
+
+
+/* HOVER */
+
+.variant-card:hover {
+  transform: translateY(-5px);
+
+  border-color: #c62828;
+
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.10);
+}
+
+.variant-card:hover::before {
+  transform: scaleY(1);
+}
+
+
+/* =========================================
+   ICON
+========================================= */
+
+.variant-card-icon {
+  width: 48px;
+  height: 48px;
+
+  min-width: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #fff1f1;
+  color: #c62828;
+
+  border-radius: 12px;
+
+  font-size: 20px;
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.variant-card:hover .variant-card-icon {
+  background: #c62828;
+  color: #ffffff;
+  transform: rotate(5deg);
+}
+
+
+/* =========================================
+   CONTENT
+========================================= */
+
+.variant-card-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.variant-card-content h4 {
+  margin: 0 0 5px;
+
+  color: #222;
+
+  font-size: 17px;
+  font-weight: 700;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* =========================================
+   VARIANT CODE
+========================================= */
+
+.variant-code {
+  margin: 0 0 7px;
+
+  color: #777;
+
+  font-size: 12px;
+  font-weight: 500;
+
+  letter-spacing: 0.5px;
+}
+
+
+/* =========================================
+   PRICE
+========================================= */
+
+.variant-price {
+  color: #c62828;
+
+  font-size: 18px;
+  font-weight: 800;
+}
+
+
+/* =========================================
+   OLD PRICE
+========================================= */
+
+.variant-old-price {
+  margin-top: 3px;
+
+  color: #999;
+
+  font-size: 12px;
+
+  text-decoration: line-through;
+}
+
+
+/* =========================================
+   STOCK
+========================================= */
+
+.variant-card-content > p:last-child {
+  margin: 7px 0 0;
+
+  color: #555;
+
+  font-size: 12px;
+  font-weight: 500;
+}
+
+
+/* =========================================
+   ARROW
+========================================= */
+
+.variant-arrow {
+  width: 32px;
+  height: 32px;
+
+  min-width: 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #f7f7f7;
+  color: #777;
+
+  font-size: 18px;
+  font-weight: 600;
+
+  transition:
+    background 0.25s ease,
+    color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.variant-card:hover .variant-arrow {
+  background: #c62828;
+  color: #ffffff;
+  transform: translateX(4px);
+}
+
+
+/* =========================================
+   LOADING / ERROR / EMPTY
+========================================= */
+
+.variant-section > h3 {
+  text-align: center;
+
+  margin: 50px auto;
+
+  color: #555;
+
+  font-size: 20px;
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+
+  .variant-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .variant-section {
+    margin: 25px auto;
+    padding: 0 15px;
+  }
+
+  .variant-section-header {
+    margin-bottom: 18px;
+  }
+
+  .variant-section-header h3 {
+    font-size: 20px;
+  }
+
+  .variant-total {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .variant-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .variant-card {
+    min-height: 90px;
+    padding: 15px;
+    border-radius: 12px;
+  }
+
+  .variant-card-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    font-size: 17px;
+  }
+
+  .variant-card-content h4 {
+    font-size: 15px;
+  }
+
+  .variant-price {
+    font-size: 16px;
+  }
+
+  .variant-arrow {
+    width: 29px;
+    height: 29px;
+    min-width: 29px;
+    font-size: 16px;
+  }
+
+}
+
+
+/* =========================================
+   SMALL MOBILE
+========================================= */
+
+@media (max-width: 380px) {
+
+  .variant-section-header h3 {
+    font-size: 18px;
+  }
+
+  .variant-card {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .variant-card-icon {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+
+  .variant-card-content h4 {
+    font-size: 14px;
+  }
+
+  .variant-price {
+    font-size: 15px;
+  }
+
+}/* =========================================
+   VARIANT CHECKOUT BUTTON
+========================================= */
+
+.variant-checkout-btn {
+  width: 100%;
+
+  margin-top: 12px;
+
+  padding: 10px 14px;
+
+  border: none;
+  border-radius: 7px;
+
+  background: #c62828;
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.variant-checkout-btn:hover {
+  background: #a91f1f;
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 6px 15px
+    rgba(198, 40, 40, 0.25);
+}
+
+.variant-checkout-btn i {
+  font-size: 13px;
+}
+
+.variant-checkout-btn:disabled {
+  background: #aaa;
+  color: #eee;
+
+  cursor: not-allowed;
+
+  transform: none;
+
+  box-shadow: none;
+}
+
+
+/* =========================================
+   STOCK
+========================================= */
+
+.variant-stock {
+  margin: 7px 0 0 !important;
+
+  font-size: 12px !important;
+  color: #555 !important;
+}
+.variant-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.variant-pdf-btn {
+  width: 100%;
+  padding: 10px 14px;
+
+  border: 1px solid #e63946;
+  border-radius: 6px;
+
+  background: #fff;
+  color: #e63946;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.variant-pdf-btn:hover {
+  background: #e63946;
+  color: #fff;
+}
+
+.variant-pdf-btn i {
+  margin-right: 7px;
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .variant-checkout-btn {
+    padding: 11px 14px;
+
+    font-size: 13px;
+  }
+
+}

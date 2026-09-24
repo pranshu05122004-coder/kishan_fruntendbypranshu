@@ -1,0 +1,344 @@
+section {
+  padding: 88px 0;
+}
+.slbl {
+  font-family: "Dancing Script", cursive;
+  font-size: 1.35rem;
+  color: var(--primary);
+  display: block;
+  margin-bottom: 4px;
+}
+.stitle {
+  font-size: clamp(1.9rem, 4vw, 2.7rem);
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+.stitle span {
+  color: var(--primary);
+}
+.sline {
+  width: 58px;
+  height: 4px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  margin: 0 auto 12px;
+}
+.sline.lft {
+  margin-left: 0;
+}
+.sdesc {
+  color: #777;
+  font-size: 0.93rem;
+  line-height: 1.8;
+}
+.btn-red {
+  background: #326edf;
+  color: #fff;
+  border: none;
+  border-radius: 50px;
+  padding: 14px 32px;
+  font-weight: 600;
+  font-size: 0.93rem;
+  box-shadow: 0 8px 24px rgba(232, 40, 26, 0.35);
+  transition: 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+}
+.btn-red:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 34px rgba(232, 40, 26, 0.45);
+  color: #fff;
+}
+
+/* ===================== HERO ===================== */
+#hero {
+  background: var(--cream);
+  min-height: 92vh;
+  display: flex;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+.hbgtxt {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 22vw;
+  font-weight: 900;
+  font-family: "Playfair Display", serif;
+  color: rgba(0, 0, 0, 0.04);
+  pointer-events: none;
+  white-space: nowrap;
+}
+.hs {
+  position: absolute;
+  border-radius: 50%;
+}
+.hs1 {
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(232, 40, 26, 0.07), transparent 70%);
+  top: -90px;
+  right: -80px;
+  animation: fsh 8s ease-in-out infinite;
+}
+.hs2 {
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(
+    circle,
+    rgba(246, 166, 35, 0.09),
+    transparent 70%
+  );
+  bottom: -50px;
+  left: 8%;
+  animation: fsh 10s ease-in-out infinite reverse;
+}
+@keyframes fsh {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-28px);
+  }
+}
+.hbadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 30px;
+  padding: 6px 16px 6px 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  margin-bottom: 22px;
+}
+.hbadge .hbi {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.78rem;
+}
+.hbadge span {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--dark);
+}
+.htitle {
+  font-size: clamp(2.7rem, 6vw, 4.8rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 18px;
+}
+.htitle .hl {
+    color: #326edf;
+  position: relative;
+  display: inline-block;
+}
+.htitle .hl::before {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background: rgba(232, 40, 26, 0.14);
+  border-radius: 4px;
+  z-index: -1;
+}
+.hdesc {
+  font-size: 1rem;
+  color: #666;
+  line-height: 1.8;
+  max-width: 470px;
+  margin-bottom: 30px;
+}
+/* FIX 2 â€” Video play button */
+.btn-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--dark);
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 10px 16px;
+  transition: 0.3s;
+  cursor: pointer;
+}
+.btn-play .pico {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  color: var(--primary);
+  font-size: 0.95rem;
+  transition: 0.3s;
+  flex-shrink: 0;
+}
+.btn-play:hover .pico {
+  background: var(--primary);
+  color: #fff;
+  transform: scale(1.1);
+}
+.btn-play:hover {
+  color: var(--primary);
+}
+.hstats {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+.hstat .snum {
+  font-family: "Playfair Display", serif;
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--dark);
+  display: block;
+  line-height: 1;
+}
+.hstat .snum em {
+  color: var(--primary);
+  font-style: normal;
+}
+.hstat small {
+  font-size: 0.7rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.sdiv {
+  width: 1px;
+  background: #ddd;
+  height: 38px;
+  align-self: center;
+}
+.hcircle {
+  width: 480px;
+  height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 40%, #fff8f0, #ffe5c8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+  box-shadow: 0 28px 76px rgba(232, 40, 26, 0.14);
+}
+.hcircle img {    width: 81%;
+    height: 83%;
+    border-radius: 32%;
+}
+.fcard {
+  position: absolute;
+  background: #fff;
+  border-radius: 11px;
+  padding: 10px 15px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.fcard.fc1 {
+  top: 55px;
+  left: -15px;
+  animation: fltc 4s ease-in-out infinite;
+}
+.fcard.fc2 {
+  bottom: 75px;
+  right: -25px;
+  animation: fltc 4s ease-in-out infinite 1.5s;
+}
+.fcard.fc3 {
+  top: 38%;
+  right: -45px;
+  animation: fltc 4s ease-in-out infinite 0.8s;
+}
+@keyframes fltc {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+.fcoi {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+}
+.fcoi.r {
+  background: rgba(232, 40, 26, 0.11);
+  color: var(--primary);
+}
+.fcoi.y {
+  background: rgba(246, 166, 35, 0.14);
+  color: var(--secondary);
+}
+.fcoi.g {
+  background: rgba(45, 106, 79, 0.11);
+  color: var(--green);
+}
+.fcnum {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--dark);
+  display: block;
+  line-height: 1;
+}
+.fcsm {
+  font-size: 0.66rem;
+  color: #999;
+}
+
+/* ===================== MARQUEE ===================== */
+.mqsec {
+  background: var(--primary);
+  padding: 13px 0;
+  overflow: hidden;
+}
+.mqtrack {
+  display: flex;
+  gap: 38px;
+  white-space: nowrap;
+  animation: mqrun 22s linear infinite;
+}
+.mqitem {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 500;
+}
+.mqitem i {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.55rem;
+}
+@keyframes mqrun {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
