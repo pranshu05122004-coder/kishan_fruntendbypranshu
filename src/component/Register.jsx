@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "../assets/css/registration.css";
+import "../assets/css/Registration.css";
 import { Link } from "react-router-dom";
 
 const API_URL = "http://localhost:5001";
