@@ -9,12 +9,19 @@ import "../assets/css/vareint.css";
 interface Variant {
   id: number;
   product_id: number;
+
   variant_name: string;
   variant_code?: string;
+
+  // ✅ PART NUMBER ADDED
+  part_number?: string | null;
+
   price?: number | string;
   old_price?: number | string | null;
+
   image?: string | null;
-  pdf_path?: string | null; // ✅ NEW
+  pdf_path?: string | null;
+
   stock?: number;
   status?: number;
 }
@@ -62,9 +69,17 @@ const Variant: React.FC = () => {
         const productVariants =
           data.product?.variants || [];
 
+        console.log(
+          "🔥 VARIANTS:",
+          productVariants
+        );
+
         setVariants(productVariants);
       } catch (err) {
-        console.error("❌ Variant Error:", err);
+        console.error(
+          "❌ Variant Error:",
+          err
+        );
 
         setError(
           "Variants load nahi ho paaye."
@@ -82,9 +97,25 @@ const Variant: React.FC = () => {
   // =====================================
 
   const handleCheckout = (variant: Variant) => {
-    console.log("🛒 Selected Variant:", variant);
-    console.log("🆔 Product ID:", variant.product_id);
-    console.log("🆔 Variant ID:", variant.id);
+    console.log(
+      "🛒 Selected Variant:",
+      variant
+    );
+
+    console.log(
+      "🆔 Product ID:",
+      variant.product_id
+    );
+
+    console.log(
+      "🆔 Variant ID:",
+      variant.id
+    );
+
+    console.log(
+      "🔢 Part Number:",
+      variant.part_number
+    );
 
     navigate(
       `/product/${variant.product_id}?variantId=${variant.id}`,
@@ -105,15 +136,21 @@ const Variant: React.FC = () => {
 
   const handleViewPdf = (variant: Variant) => {
     if (!variant.pdf_path) {
-      alert("Is variant ka PDF available nahi hai.");
+      alert(
+        "Is variant ka PDF available nahi hai."
+      );
       return;
     }
 
-    const pdfUrl = variant.pdf_path.startsWith("http")
-      ? variant.pdf_path
-      : `http://localhost:5001${variant.pdf_path}`;
+    const pdfUrl =
+      variant.pdf_path.startsWith("http")
+        ? variant.pdf_path
+        : `http://localhost:5001${variant.pdf_path}`;
 
-    console.log("📄 Opening PDF:", pdfUrl);
+    console.log(
+      "📄 Opening PDF:",
+      pdfUrl
+    );
 
     window.open(
       pdfUrl,
@@ -129,7 +166,9 @@ const Variant: React.FC = () => {
   if (loading) {
     return (
       <div className="variant-section">
-        <h3>Loading Variants...</h3>
+        <h3>
+          Loading Variants...
+        </h3>
       </div>
     );
   }
@@ -153,7 +192,9 @@ const Variant: React.FC = () => {
   if (variants.length === 0) {
     return (
       <div className="variant-section">
-        <h3>No Variants Available</h3>
+        <h3>
+          No Variants Available
+        </h3>
       </div>
     );
   }
@@ -166,7 +207,9 @@ const Variant: React.FC = () => {
     <div className="variant-section">
 
       <div className="variant-section-header">
-        <h3>Available Variants</h3>
+        <h3>
+          Available Variants
+        </h3>
 
         <span className="variant-total">
           {variants.length} Variants
@@ -191,7 +234,8 @@ const Variant: React.FC = () => {
           const stock =
             Number(variant.stock || 0);
 
-          const isInStock = stock > 0;
+          const isInStock =
+            stock > 0;
 
           return (
             <div
@@ -213,9 +257,31 @@ const Variant: React.FC = () => {
                   {variant.variant_name}
                 </h4>
 
+                {/* VARIANT CODE */}
+
                 {variant.variant_code && (
                   <p className="variant-code">
+                    Code:{" "}
                     {variant.variant_code}
+                  </p>
+                )}
+
+                {/* ✅ PART NUMBER */}
+
+                {variant.part_number && (
+                  <p
+                    className="variant-part-number"
+                    style={{
+                      margin: "5px 0",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      color: "#475569",
+                    }}
+                  >
+                    Part Number:{" "}
+                    <strong>
+                      {variant.part_number}
+                    </strong>
                   </p>
                 )}
 
@@ -224,7 +290,9 @@ const Variant: React.FC = () => {
                 {variant.price !== undefined && (
                   <div className="variant-price">
                     ₹
-                    {price.toLocaleString("en-IN")}
+                    {price.toLocaleString(
+                      "en-IN"
+                    )}
                   </div>
                 )}
 
@@ -234,7 +302,9 @@ const Variant: React.FC = () => {
                   oldPrice > price && (
                     <div className="variant-old-price">
                       ₹
-                      {oldPrice.toLocaleString("en-IN")}
+                      {oldPrice.toLocaleString(
+                        "en-IN"
+                      )}
                     </div>
                   )}
 
@@ -257,7 +327,9 @@ const Variant: React.FC = () => {
                     className="variant-checkout-btn"
                     disabled={!isInStock}
                     onClick={() =>
-                      handleCheckout(variant)
+                      handleCheckout(
+                        variant
+                      )
                     }
                   >
                     <i className="fas fa-shopping-bag"></i>
@@ -274,10 +346,13 @@ const Variant: React.FC = () => {
                       type="button"
                       className="variant-pdf-btn"
                       onClick={() =>
-                        handleViewPdf(variant)
+                        handleViewPdf(
+                          variant
+                        )
                       }
                     >
                       <i className="fas fa-file-pdf"></i>
+
                       View PDF
                     </button>
                   )}

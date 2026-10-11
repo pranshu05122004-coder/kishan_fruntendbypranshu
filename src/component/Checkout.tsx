@@ -1,15 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+const API_BASE = "http://localhost:5001/api";
+
+interface Variant {
+  id: number;
+  variant_name?: string | null;
+  variant_code?: string | null;
+  part_number?: string | null;
+  price: number;
+  old_price?: number | null;
+  image?: string | null;
+  stock?: number | null;
+  status?: string | null;
+}
+
 interface Product {
   id: number;
   name: string;
-  category: string;
-  description: string;
-  price: number | string;
-  old_price?: number | string | null;
-  image: string;
-  stock: boolean | number;
+  category?: string;
+  description?: string;
+  price: number;
+  old_price?: number | null;
+  image?: string | null;
+  stock?: number | null;
+  variants?: Variant[];
 }
 
 interface User {
@@ -17,8 +32,10 @@ interface User {
   name: string;
   email: string;
   phone: string;
+
   companyName?: string | null;
   gstNumber?: string | null;
+
   address1?: string | null;
   address2?: string | null;
   area?: string | null;
@@ -28,67 +45,102 @@ interface User {
   country?: string | null;
 }
 
-const Checkout = () => {
+interface CreatedOrder {
+  orderId?: number | string;
+  orderNumber?: string;
+}
+
+const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const productId = searchParams.get("productId");
-  const quantityParam =
-    Number(searchParams.get("quantity")) || 1;
+  const variantId = searchParams.get("variantId");
+  const quantityFromUrl = Number(
+    searchParams.get("quantity") || 1
+  );
 
-  // =====================================
-  // PRODUCT
-  // =====================================
+  // =========================================================
+  // PRODUCT / USER
+  // =========================================================
 
   const [product, setProduct] =
     useState<Product | null>(null);
 
-  const [quantity, setQuantity] = useState(
-    quantityParam > 0 ? quantityParam : 1
-  );
-
-  const [productLoading, setProductLoading] =
-    useState(true);
-
-  const [productError, setProductError] =
-    useState("");
-
-  // =====================================
-  // USER
-  // =====================================
+  const [selectedVariant, setSelectedVariant] =
+    useState<Variant | null>(null);
 
   const [user, setUser] =
     useState<User | null>(null);
 
-  const [userLoading, setUserLoading] =
+  // =========================================================
+  // QUANTITY
+  // =========================================================
+
+  const [quantity, setQuantity] = useState(
+    Math.max(1, quantityFromUrl)
+  );
+
+  // =========================================================
+  // LOADING
+  // =========================================================
+
+  const [loading, setLoading] =
     useState(true);
 
-  const [userError, setUserError] =
-    useState("");
-
-
-const [orderSuccess, setOrderSuccess] = useState(false);
-const [createdOrder, setCreatedOrder] = useState<{
-  id?: number | string;
-  orderNumber?: string;
-} | null>(null);
-
-
-  // =====================================
-  // ORDER LOADING
-  // =====================================
+  const [userLoading, setUserLoading] =
+    useState(true);
 
   const [placingOrder, setPlacingOrder] =
     useState(false);
 
-  // =====================================
-  // CUSTOMER / SHIPPING FORM
-  // =====================================
+  const [savingAddress, setSavingAddress] =
+    useState(false);
+
+  // =========================================================
+  // ERRORS
+  // =========================================================
+
+  const [productError, setProductError] =
+    useState("");
+
+  const [userError, setUserError] =
+    useState("");
+
+  // =========================================================
+  // ORDER SUCCESS
+  // =========================================================
+
+  const [orderSuccess, setOrderSuccess] =
+    useState(false);
+
+  const [createdOrder, setCreatedOrder] =
+    useState<CreatedOrder | null>(null);
+
+  // =========================================================
+  // SAVED ADDRESS STATES
+  // =========================================================
+
+  const [hasSavedAddress, setHasSavedAddress] =
+    useState(false);
+
+  const [useSavedAddress, setUseSavedAddress] =
+    useState(false);
+
+  const [editingAddress, setEditingAddress] =
+    useState(false);
+
+  const [saveAddress, setSaveAddress] =
+    useState(true);
+
+  // =========================================================
+  // FORM DATA
+  // =========================================================
 
   const [formData, setFormData] = useState({
     fullName: "",
-    mobile: "",
     email: "",
+    mobile: "",
 
     companyName: "",
     gstNumber: "",
@@ -105,76 +157,98 @@ const [createdOrder, setCreatedOrder] = useState<{
     notes: "",
   });
 
-  // =====================================
+  // =========================================================
   // LOAD PRODUCT
-  // =====================================
+  // =========================================================
 
   useEffect(() => {
     const loadProduct = async () => {
       if (!productId) {
-        setProductError("Product ID missing.");
-        setProductLoading(false);
+        setProductError(
+          "Product ID is missing."
+        );
+
+        setLoading(false);
         return;
       }
 
       try {
-        setProductLoading(true);
+        setLoading(true);
         setProductError("");
 
         const response = await fetch(
-          `http://localhost:5001/api/products/${productId}`
+          `${API_BASE}/products/${productId}`
         );
 
         const data = await response.json();
 
-        console.log(
-          "📦 Product API Status:",
-          response.status
-        );
-
-        console.log(
-          "📦 Product API Data:",
-          data
-        );
-
-        if (!response.ok || !data.success) {
+        if (!response.ok) {
           throw new Error(
-            data.message || "Product not found."
+            data?.message ||
+              "Failed to load product."
           );
         }
 
-        const fetchedProduct =
-          data.product || data.data;
+        const loadedProduct: Product =
+          data.product ||
+          data.data ||
+          data;
 
-        if (!fetchedProduct) {
-          throw new Error(
-            "Product information missing."
+        setProduct(loadedProduct);
+
+        // =====================================================
+        // SELECT VARIANT
+        // =====================================================
+
+        if (
+          variantId &&
+          Array.isArray(
+            loadedProduct.variants
+          )
+        ) {
+          const foundVariant =
+            loadedProduct.variants.find(
+              (variant) =>
+                String(variant.id) ===
+                String(variantId)
+            );
+
+          if (foundVariant) {
+            setSelectedVariant(
+              foundVariant
+            );
+          }
+        } else if (
+          Array.isArray(
+            loadedProduct.variants
+          ) &&
+          loadedProduct.variants.length === 1
+        ) {
+          setSelectedVariant(
+            loadedProduct.variants[0]
           );
         }
-
-        setProduct(fetchedProduct);
-      } catch (error) {
+      } catch (error: any) {
         console.error(
-          "❌ Checkout Product Error:",
+          "Product load error:",
           error
         );
 
         setProductError(
-          error instanceof Error
-            ? error.message
-            : "Product load nahi ho pa raha hai."
+          error?.message ||
+            "Unable to load product."
         );
       } finally {
-        setProductLoading(false);
+        setLoading(false);
       }
     };
 
     loadProduct();
-  }, [productId]);
+  }, [productId, variantId]);
 
-  // =====================================
-  // LOAD LOGGED-IN USER
-  // =====================================
+  // =========================================================
+  // LOAD USER
+  // =========================================================
 
   useEffect(() => {
     const loadUser = async () => {
@@ -182,138 +256,129 @@ const [createdOrder, setCreatedOrder] = useState<{
         setUserLoading(true);
         setUserError("");
 
-        // =====================================
-        // TOKEN
-        // =====================================
-
         const token =
           localStorage.getItem("token");
 
-        console.log(
-          "🔑 Checkout Token:",
-          token
-        );
-
         if (!token) {
-          throw new Error(
-            "Login token not found. Please login again."
+          setUserError(
+            "Please login to continue with checkout."
           );
+
+          setUserLoading(false);
+          return;
         }
 
-        // =====================================
-        // CURRENT USER API
-        // =====================================
-
         const response = await fetch(
-          "http://localhost:5001/api/users/me",
+          `${API_BASE}/users/me`,
           {
-            method: "GET",
-
             headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+              Authorization:
+                `Bearer ${token}`,
             },
           }
         );
 
-        const data = await response.json();
+        const data =
+          await response.json();
 
-        console.log(
-          "👤 /api/users/me Status:",
-          response.status
-        );
-
-        console.log(
-          "👤 User API Data:",
-          data
-        );
-
-        // =====================================
-        // CHECK RESPONSE
-        // =====================================
-
-        if (!response.ok || !data.success) {
+        if (!response.ok) {
           throw new Error(
-            data.message ||
-              "User data not found."
+            data?.message ||
+              "Failed to load account details."
           );
         }
 
-        // =====================================
-        // USER DATA
-        // =====================================
+        const loggedUser: User =
+          data.user ||
+          data.data ||
+          data;
 
-        const fetchedUser: User =
-          data.user || data.data;
+        setUser(loggedUser);
 
-        if (!fetchedUser) {
-          throw new Error(
-            "User information missing."
-          );
-        }
+        // =====================================================
+        // CHECK SAVED ADDRESS
+        // =====================================================
 
-        console.log(
-          "✅ Checkout User:",
-          fetchedUser
+        const savedAddress =
+          !!loggedUser.address1 &&
+          !!loggedUser.area &&
+          !!loggedUser.city &&
+          !!loggedUser.state &&
+          !!loggedUser.pincode;
+
+        setHasSavedAddress(
+          savedAddress
         );
 
-        setUser(fetchedUser);
+        setUseSavedAddress(
+          savedAddress
+        );
 
-        // =====================================
-        // AUTO FILL USER DATA
-        // =====================================
+        setEditingAddress(
+          !savedAddress
+        );
 
-        setFormData((previous) => ({
-          ...previous,
+        // =====================================================
+        // AUTO FILL USER DETAILS
+        // =====================================================
+
+        setFormData((prev) => ({
+          ...prev,
 
           fullName:
-            fetchedUser.name || "",
+            loggedUser.name || "",
 
           email:
-            fetchedUser.email || "",
+            loggedUser.email || "",
 
           mobile:
-            fetchedUser.phone || "",
+            loggedUser.phone || "",
 
           companyName:
-            fetchedUser.companyName || "",
+            loggedUser.companyName ||
+            "",
 
           gstNumber:
-            fetchedUser.gstNumber || "",
+            loggedUser.gstNumber ||
+            "",
 
           address1:
-            fetchedUser.address1 || "",
+            loggedUser.address1 ||
+            "",
 
           address2:
-            fetchedUser.address2 || "",
+            loggedUser.address2 ||
+            "",
 
           area:
-            fetchedUser.area || "",
+            loggedUser.area ||
+            "",
 
           city:
-            fetchedUser.city || "",
+            loggedUser.city ||
+            "",
 
           state:
-            fetchedUser.state || "",
+            loggedUser.state ||
+            "",
 
           pincode:
-            fetchedUser.pincode || "",
+            loggedUser.pincode ||
+            "",
 
           country:
-            fetchedUser.country || "India",
+            loggedUser.country ||
+            "India",
         }));
-      } catch (error) {
+      } catch (error: any) {
         console.error(
-          "❌ Checkout User Error:",
+          "User load error:",
           error
         );
 
-        setUser(null);
-
         setUserError(
-          error instanceof Error
-            ? error.message
-            : "User details load nahi ho pa rahe hain."
+          error?.message ||
+            "Unable to load account details."
         );
       } finally {
         setUserLoading(false);
@@ -323,311 +388,200 @@ const [createdOrder, setCreatedOrder] = useState<{
     loadUser();
   }, []);
 
-  // =====================================
-  // FORM CHANGE
-  // =====================================
+  // =========================================================
+  // FORM HANDLER
+  // =========================================================
 
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement |
-        HTMLTextAreaElement |
-        HTMLSelectElement
+      HTMLTextAreaElement |
+      HTMLSelectElement
     >
   ) => {
-    const { name, value } = e.target;
+    const {
+      name,
+      value,
+    } = e.target;
 
-    setFormData((previous) => ({
-      ...previous,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
     }));
   };
 
-  // =====================================
-  // QUANTITY
-  // =====================================
-
-  const increaseQuantity = () => {
-    setQuantity(
-      (previous) => previous + 1
-    );
-  };
-
-  const decreaseQuantity = () => {
-    setQuantity(
-      (previous) =>
-        previous > 1 ? previous - 1 : 1
-    );
-  };
-
-  // =====================================
+  // =========================================================
   // PRICE
-  // =====================================
+  // =========================================================
 
-  const price = product
-    ? Number(product.price)
-    : 0;
+  const price = Number(
+    selectedVariant?.price ??
+      product?.price ??
+      0
+  );
 
-  const oldPrice =
-    product?.old_price !== null &&
-    product?.old_price !== undefined
-      ? Number(product.old_price)
-      : null;
+  const oldPrice = Number(
+    selectedVariant?.old_price ??
+      product?.old_price ??
+      0
+  );
 
   const subtotal =
     price * quantity;
 
-  // =====================================
-  // SHIPPING
-  // =====================================
-
   const shippingCharge =
-    subtotal >= 50000 ? 0 : 500;
-
-  // =====================================
-  // DISCOUNT
-  // =====================================
+    subtotal >= 50000
+      ? 0
+      : 500;
 
   const discount = 0;
-
-  // =====================================
-  // GRAND TOTAL
-  // =====================================
 
   const grandTotal =
     subtotal +
     shippingCharge -
     discount;
 
-  // =====================================
-  // PLACE ORDER
-  // =====================================
+  // =========================================================
+  // QUANTITY
+  // =========================================================
 
-  const handlePlaceOrder = async (
-    e: React.FormEvent<HTMLFormElement>
+  const increaseQuantity = () => {
+    const availableStock =
+      selectedVariant?.stock ??
+      product?.stock ??
+      999999;
+
+    if (
+      quantity <
+      availableStock
+    ) {
+      setQuantity(
+        (prev) => prev + 1
+      );
+    }
+  };
+
+  const decreaseQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(
+        (prev) => prev - 1
+      );
+    }
+  };
+
+  // =========================================================
+  // RESTORE SAVED ADDRESS
+  // =========================================================
+
+  const restoreSavedAddress = () => {
+    if (!user) return;
+
+    setFormData((prev) => ({
+      ...prev,
+
+      address1:
+        user.address1 || "",
+
+      address2:
+        user.address2 || "",
+
+      area:
+        user.area || "",
+
+      city:
+        user.city || "",
+
+      state:
+        user.state || "",
+
+      pincode:
+        user.pincode || "",
+
+      country:
+        user.country || "India",
+    }));
+  };
+
+  // =========================================================
+  // USE SAVED ADDRESS
+  // =========================================================
+
+  const handleUseSavedAddress = () => {
+    restoreSavedAddress();
+
+    setUseSavedAddress(true);
+    setEditingAddress(false);
+  };
+
+  // =========================================================
+  // EDIT SAVED ADDRESS
+  // =========================================================
+
+  const handleEditAddress = () => {
+    restoreSavedAddress();
+
+    setUseSavedAddress(false);
+    setEditingAddress(true);
+
+    setSaveAddress(true);
+  };
+
+  // =========================================================
+  // USE NEW ADDRESS
+  // =========================================================
+
+  const handleUseNewAddress = () => {
+    setUseSavedAddress(false);
+    setEditingAddress(true);
+
+    setFormData((prev) => ({
+      ...prev,
+
+      address1: "",
+      address2: "",
+      area: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India",
+    }));
+
+    setSaveAddress(true);
+  };
+
+  // =========================================================
+  // CANCEL EDIT
+  // =========================================================
+
+  const handleCancelAddressEdit = () => {
+    if (!user) return;
+
+    restoreSavedAddress();
+
+    setUseSavedAddress(true);
+    setEditingAddress(false);
+  };
+
+  // =========================================================
+  // SAVE ADDRESS TO USER PROFILE
+  // =========================================================
+
+  const saveUserAddress = async (
+    token: string,
+    cleanMobile: string,
+    cleanPincode: string
   ) => {
-    e.preventDefault();
-
-    // =====================================
-    // PREVENT DOUBLE CLICK
-    // =====================================
-
-    if (placingOrder) {
-      return;
+    if (!saveAddress) {
+      return true;
     }
-
-    // =====================================
-    // PRODUCT CHECK
-    // =====================================
-
-    if (!product) {
-      alert(
-        "Product information missing."
-      );
-      return;
-    }
-
-    // =====================================
-    // USER CHECK
-    // =====================================
-
-    if (!user) {
-      alert(
-        "User information load nahi hui. Please login again."
-      );
-      return;
-    }
-
-    // =====================================
-    // REQUIRED VALIDATION
-    // =====================================
-
-    if (
-      !formData.fullName.trim() ||
-      !formData.mobile.trim() ||
-      !formData.email.trim() ||
-      !formData.address1.trim() ||
-      !formData.area.trim() ||
-      !formData.city.trim() ||
-      !formData.state.trim() ||
-      !formData.pincode.trim()
-    ) {
-      alert(
-        "Please saari required details fill karein."
-      );
-      return;
-    }
-
-    // =====================================
-    // MOBILE VALIDATION
-    // =====================================
-
-    const cleanMobile =
-      formData.mobile.replace(/\D/g, "");
-
-    if (
-      !/^[0-9]{10}$/.test(
-        cleanMobile
-      )
-    ) {
-      alert(
-        "Please valid 10 digit mobile number enter karein."
-      );
-      return;
-    }
-
-    // =====================================
-    // PIN VALIDATION
-    // =====================================
-
-    const cleanPincode =
-      formData.pincode.trim();
-
-    if (
-      !/^[0-9]{6}$/.test(
-        cleanPincode
-      )
-    ) {
-      alert(
-        "Please valid 6 digit PIN code enter karein."
-      );
-      return;
-    }
-
-    // =====================================
-    // PAYMENT CHECK
-    // =====================================
-
-    if (
-      formData.paymentMethod !==
-      "COD"
-    ) {
-      alert(
-        "Currently only Cash on Delivery available hai."
-      );
-      return;
-    }
-
-    // =====================================
-    // AUTH TOKEN
-    // =====================================
-
-    const token =
-      localStorage.getItem("token");
-
-    console.log(
-      "🔑 Order Token:",
-      token
-    );
-
-    if (!token) {
-      alert(
-        "Login session nahi mili. Please login again."
-      );
-
-      navigate("/login");
-      return;
-    }
-
-    // =====================================
-    // ORDER DATA
-    // =====================================
-
-    const orderData = {
-      // USER
-      userId: user.id,
-
-      // PRODUCT
-      productId: product.id,
-      productName: product.name,
-
-      // QUANTITY
-      quantity: quantity,
-
-      // PRICE
-      pricePerItem: price,
-      oldPrice: oldPrice,
-
-      // AMOUNTS
-      subtotal: subtotal,
-      shippingCharge: shippingCharge,
-      discount: discount,
-      grandTotal: grandTotal,
-
-      // CUSTOMER
-      customer: {
-        fullName:
-          formData.fullName.trim(),
-
-        mobile:
-          cleanMobile,
-
-        email:
-          formData.email.trim(),
-
-        companyName:
-          formData.companyName.trim(),
-
-        gstNumber:
-          formData.gstNumber.trim(),
-      },
-
-      // SHIPPING ADDRESS
-      shippingAddress: {
-        address1:
-          formData.address1.trim(),
-
-        address2:
-          formData.address2.trim(),
-
-        area:
-          formData.area.trim(),
-
-        city:
-          formData.city.trim(),
-
-        state:
-          formData.state.trim(),
-
-        pincode:
-          cleanPincode,
-
-        country:
-          formData.country || "India",
-      },
-
-      // PAYMENT
-      paymentMethod:
-        formData.paymentMethod,
-
-      // NOTES
-      notes:
-        formData.notes.trim(),
-    };
-
-    console.log(
-      "================================="
-    );
-
-    console.log(
-      "📦 FINAL ORDER DATA:",
-      orderData
-    );
-
-    console.log(
-      "================================="
-    );
-
-    // =====================================
-    // SEND ORDER TO BACKEND
-    // =====================================
 
     try {
-      setPlacingOrder(true);
+      setSavingAddress(true);
 
       const response = await fetch(
-        "http://localhost:5001/api/orders",
+        `${API_BASE}/profile`,
         {
-          method: "POST",
+          method: "PUT",
 
           headers: {
             "Content-Type":
@@ -637,1215 +591,2400 @@ const [createdOrder, setCreatedOrder] = useState<{
               `Bearer ${token}`,
           },
 
-          body:
-            JSON.stringify(orderData),
+          body: JSON.stringify({
+            name:
+              formData.fullName.trim(),
+
+            phone:
+              cleanMobile,
+
+            companyName:
+              formData.companyName.trim(),
+
+            gstNumber:
+              formData.gstNumber.trim(),
+
+            address1:
+              formData.address1.trim(),
+
+            address2:
+              formData.address2.trim(),
+
+            area:
+              formData.area.trim(),
+
+            city:
+              formData.city.trim(),
+
+            state:
+              formData.state.trim(),
+
+            pincode:
+              cleanPincode,
+
+            country:
+              formData.country ||
+              "India",
+          }),
         }
       );
 
       const data =
         await response.json();
 
-      console.log(
-        "📦 Order API Status:",
-        response.status
-      );
-
-      console.log(
-        "📦 Order API Response:",
-        data
-      );
-
-      // =====================================
-      // ERROR
-      // =====================================
-
-      if (
-        !response.ok ||
-        !data.success
-      ) {
+      if (!response.ok) {
         throw new Error(
-          data.message ||
-            "Order place nahi ho pa raha hai."
+          data?.message ||
+            "Failed to save address."
         );
       }
 
-      // =====================================
-      // SUCCESS
-      // =====================================
+      // Update local user state
+      if (data.user) {
+        setUser(data.user);
+      }
 
-      console.log(
-        "✅ ORDER SUCCESS:",
-        data
-      );
+      setHasSavedAddress(true);
 
-     const orderId =
-  data.orderId ||
-  data.order?.id ||
-  data.data?.orderId ||
-  data.data?.id;
-
-const orderNumber =
-  data.orderNumber ||
-  data.order?.orderNumber ||
-  data.data?.orderNumber;
-
-console.log("✅ ORDER ID:", orderId);
-console.log("✅ ORDER NUMBER:", orderNumber);
-
-setCreatedOrder({
-  id: orderId,
-  orderNumber: orderNumber,
-});
-
-setOrderSuccess(true);
-
-// Animation show hone do, phir Orders page
-setTimeout(() => {
-  navigate("/orders");
-}, 2200);
-
-      // =====================================
-      // GO TO ORDERS
-      // =====================================
-
-      navigate("/orders");
+      return true;
     } catch (error) {
       console.error(
-        "❌ Place Order Error:",
+        "Save address error:",
         error
       );
 
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Order place karte waqt error aa gaya."
-      );
+      return false;
     } finally {
-      setPlacingOrder(false);
+      setSavingAddress(false);
     }
   };
 
-  // =====================================
+  // =========================================================
+  // PLACE ORDER
+  // =========================================================
+
+  const handlePlaceOrder =
+    async () => {
+      if (placingOrder) return;
+
+      if (!product) {
+        alert(
+          "Product information is missing."
+        );
+
+        return;
+      }
+
+      if (!user) {
+        alert(
+          "Please login before placing the order."
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // REQUIRED FIELDS
+      // =====================================================
+
+      if (
+        !formData.fullName.trim() ||
+        !formData.email.trim() ||
+        !formData.mobile.trim() ||
+        !formData.address1.trim() ||
+        !formData.area.trim() ||
+        !formData.city.trim() ||
+        !formData.state.trim() ||
+        !formData.pincode.trim()
+      ) {
+        alert(
+          "Please fill all required customer and delivery details."
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // MOBILE
+      // =====================================================
+
+      const cleanMobile =
+        formData.mobile.replace(
+          /\D/g,
+          ""
+        );
+
+      if (
+        cleanMobile.length !== 10
+      ) {
+        alert(
+          "Please enter a valid 10-digit mobile number."
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // PINCODE
+      // =====================================================
+
+      const cleanPincode =
+        formData.pincode.replace(
+          /\D/g,
+          ""
+        );
+
+      if (
+        cleanPincode.length !== 6
+      ) {
+        alert(
+          "Please enter a valid 6-digit PIN code."
+        );
+
+        return;
+      }
+
+      // =====================================================
+      // PAYMENT
+      // =====================================================
+
+      if (
+        formData.paymentMethod !==
+        "COD"
+      ) {
+        alert(
+          "Online payment is currently unavailable."
+        );
+
+        return;
+      }
+
+      try {
+        setPlacingOrder(true);
+
+        const token =
+          localStorage.getItem(
+            "token"
+          );
+
+        if (!token) {
+          alert(
+            "Your session has expired. Please login again."
+          );
+
+          navigate("/login");
+
+          return;
+        }
+
+        // ===================================================
+        // ORDER DATA
+        // ===================================================
+
+        const orderData = {
+          userId: user.id,
+
+          productId: product.id,
+
+          productName:
+            product.name,
+
+          variantId:
+            selectedVariant?.id ||
+            null,
+
+          variantName:
+            selectedVariant?.variant_name ||
+            null,
+
+          variantCode:
+            selectedVariant?.variant_code ||
+            null,
+
+          partNumber:
+            selectedVariant?.part_number ||
+            null,
+
+          quantity,
+
+          pricePerItem:
+            price,
+
+          oldPrice,
+
+          subtotal,
+
+          shippingCharge,
+
+          discount,
+
+          grandTotal,
+
+          customer: {
+            fullName:
+              formData.fullName.trim(),
+
+            mobile:
+              cleanMobile,
+
+            email:
+              formData.email.trim(),
+
+            companyName:
+              formData.companyName.trim(),
+
+            gstNumber:
+              formData.gstNumber.trim(),
+          },
+
+          shippingAddress: {
+            address1:
+              formData.address1.trim(),
+
+            address2:
+              formData.address2.trim(),
+
+            area:
+              formData.area.trim(),
+
+            city:
+              formData.city.trim(),
+
+            state:
+              formData.state.trim(),
+
+            pincode:
+              cleanPincode,
+
+            country:
+              formData.country ||
+              "India",
+          },
+
+          paymentMethod:
+            formData.paymentMethod,
+
+          notes:
+            formData.notes.trim(),
+        };
+
+        console.log(
+          "ORDER DATA:",
+          orderData
+        );
+
+        // ===================================================
+        // CREATE ORDER
+        // ===================================================
+
+        const response =
+          await fetch(
+            `${API_BASE}/orders`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+
+                Authorization:
+                  `Bearer ${token}`,
+              },
+
+              body: JSON.stringify(
+                orderData
+              ),
+            }
+          );
+
+        const data =
+          await response.json();
+
+        console.log(
+          "ORDER RESPONSE:",
+          data
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message ||
+              "Unable to place order."
+          );
+        }
+
+        // ===================================================
+        // GET ORDER DETAILS
+        // ===================================================
+
+        const orderId =
+          data.orderId ||
+          data.order?.id ||
+          data.data?.orderId ||
+          data.data?.id;
+
+        const orderNumber =
+          data.orderNumber ||
+          data.order?.orderNumber ||
+          data.data?.orderNumber;
+
+        setCreatedOrder({
+          orderId,
+          orderNumber,
+        });
+
+        // ===================================================
+        // SAVE ADDRESS AFTER ORDER
+        // ===================================================
+
+        if (saveAddress) {
+          const addressSaved =
+            await saveUserAddress(
+              token,
+              cleanMobile,
+              cleanPincode
+            );
+
+          if (!addressSaved) {
+            console.warn(
+              "Order placed, but address could not be saved."
+            );
+          }
+        }
+
+        // ===================================================
+        // SUCCESS
+        // ===================================================
+
+        setOrderSuccess(true);
+
+        setTimeout(() => {
+          navigate("/orders");
+        }, 2200);
+
+      } catch (error: any) {
+        console.error(
+          "Place order error:",
+          error
+        );
+
+        alert(
+          error?.message ||
+            "Something went wrong while placing your order."
+        );
+      } finally {
+        setPlacingOrder(false);
+      }
+    };
+
+  // =========================================================
   // LOADING
-  // =====================================
+  // =========================================================
 
   if (
-    productLoading ||
+    loading ||
     userLoading
   ) {
     return (
-      <section className="checkout-page">
-        <div className="checkout-loading">
-          <i className="fas fa-spinner fa-spin"></i>
-
-          <h2>
-            Loading Checkout...
-          </h2>
-
-          <p>
-            Product aur user details
-            load ho rahi hain.
-          </p>
-        </div>
-
+      <>
         <style>{`
-          .checkout-page {
-            min-height: 75vh;
-            background: #f8f6f1;
-            padding: 70px 20px;
-          }
-
           .checkout-loading {
-            min-height: 500px;
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
+            background: #f8fafc;
+            font-family: Arial, sans-serif;
+          }
+
+          .loading-box {
             text-align: center;
           }
 
-          .checkout-loading i {
-            color: #e63946;
-            font-size: 42px;
-            margin-bottom: 20px;
+          .loader {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #c62828;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 16px;
           }
 
-          .checkout-loading h2 {
-            color: #222;
-            margin-bottom: 8px;
+          @keyframes spin {
+            to {
+              transform: rotate(360deg);
+            }
           }
 
-          .checkout-loading p {
-            color: #777;
+          .loading-text {
+            color: #475569;
+            font-size: 15px;
           }
         `}</style>
-      </section>
+
+        <div className="checkout-loading">
+          <div className="loading-box">
+            <div className="loader" />
+
+            <div className="loading-text">
+              Preparing your checkout...
+            </div>
+          </div>
+        </div>
+      </>
     );
   }
 
-  // =====================================
+  // =========================================================
   // PRODUCT ERROR
-  // =====================================
+  // =========================================================
 
   if (
     productError ||
     !product
   ) {
     return (
-      <section className="checkout-page">
-        <div className="checkout-error">
-          <i className="fas fa-box-open"></i>
-
-          <h2>
-            Checkout Failed
-          </h2>
-
-          <p>
-            {productError ||
-              "Product not found."}
-          </p>
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/products")
-            }
-          >
-            <i className="fas fa-arrow-left"></i>
-            Back to Products
-          </button>
-        </div>
-
+      <>
         <style>{`
-          .checkout-page {
-            min-height: 75vh;
-            background: #f8f6f1;
-            padding: 70px 20px;
-          }
-
-          .checkout-error {
-            min-height: 500px;
+          .error-page {
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
+            background: #f8fafc;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+
+          .error-card {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 18px;
+            padding: 35px;
             text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
           }
 
-          .checkout-error > i {
-            color: #e63946;
-            font-size: 48px;
-            margin-bottom: 18px;
+          .error-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
           }
 
-          .checkout-error h2 {
-            color: #222;
-            margin: 0 0 8px;
+          .error-card h2 {
+            margin: 0 0 10px;
+            color: #111827;
           }
 
-          .checkout-error p {
-            color: #777;
-            margin-bottom: 20px;
+          .error-card p {
+            color: #64748b;
+            margin-bottom: 25px;
           }
 
-          .checkout-error button {
-            padding: 12px 20px;
+          .error-btn {
             border: none;
-            border-radius: 6px;
-            background: #e63946;
-            color: #fff;
-            font-weight: 700;
+            background: #c62828;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 9px;
             cursor: pointer;
-          }
-
-          .checkout-error button i {
-            margin-right: 7px;
+            font-weight: 600;
           }
         `}</style>
-      </section>
+
+        <div className="error-page">
+          <div className="error-card">
+
+            <div className="error-icon">
+              ⚠️
+            </div>
+
+            <h2>
+              Unable to Load Product
+            </h2>
+
+            <p>
+              {productError ||
+                "Product information is unavailable."}
+            </p>
+
+            <button
+              className="error-btn"
+              onClick={() =>
+                navigate(-1)
+              }
+            >
+              Go Back
+            </button>
+
+          </div>
+        </div>
+      </>
     );
   }
 
-  // =====================================
+  // =========================================================
   // USER ERROR
-  // =====================================
+  // =========================================================
 
   if (
     userError ||
     !user
   ) {
     return (
-      <section className="checkout-page">
-        <div className="checkout-error">
-          <i className="fas fa-user-times"></i>
-
-          <h2>
-            User Details Not Found
-          </h2>
-
-          <p>
-            {userError ||
-              "Please login again."}
-          </p>
-
-          <button
-            type="button"
-            onClick={() =>
-              navigate("/login")
-            }
-          >
-            <i className="fas fa-sign-in-alt"></i>
-            Login Again
-          </button>
-        </div>
-
+      <>
         <style>{`
-          .checkout-page {
-            min-height: 75vh;
-            background: #f8f6f1;
-            padding: 70px 20px;
-          }
-
-          .checkout-error {
-            min-height: 500px;
+          .error-page {
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
+            background: #f8fafc;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+
+          .error-card {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 18px;
+            padding: 35px;
             text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
           }
 
-          .checkout-error > i {
-            color: #e63946;
-            font-size: 48px;
-            margin-bottom: 18px;
+          .error-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
           }
 
-          .checkout-error h2 {
-            color: #222;
-            margin: 0 0 8px;
+          .error-card h2 {
+            margin: 0 0 10px;
+            color: #111827;
           }
 
-          .checkout-error p {
-            color: #777;
-            margin-bottom: 20px;
+          .error-card p {
+            color: #64748b;
+            margin-bottom: 25px;
           }
 
-          .checkout-error button {
-            padding: 12px 20px;
+          .error-btn {
             border: none;
-            border-radius: 6px;
-            background: #e63946;
-            color: #fff;
-            font-weight: 700;
+            background: #c62828;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 9px;
             cursor: pointer;
-          }
-
-          .checkout-error button i {
-            margin-right: 7px;
+            font-weight: 600;
           }
         `}</style>
-      </section>
+
+        <div className="error-page">
+          <div className="error-card">
+
+            <div className="error-icon">
+              🔐
+            </div>
+
+            <h2>
+              Login Required
+            </h2>
+
+            <p>
+              {userError ||
+                "Please login to continue."}
+            </p>
+
+            <button
+              className="error-btn"
+              onClick={() =>
+                navigate("/login")
+              }
+            >
+              Login
+            </button>
+
+          </div>
+        </div>
+      </>
     );
   }
-// =====================================
-// ORDER SUCCESS SCREEN
-// =====================================
 
-if (orderSuccess) {
-  return (
-    <section className="order-success-page">
-      <div className="success-card">
+  // =========================================================
+  // ORDER SUCCESS
+  // =========================================================
 
-        <div className="success-circle">
-          <i className="fas fa-check"></i>
-        </div>
-
-        <h1>
-          Order Placed!
-        </h1>
-
-        <p>
-          Your order has been successfully placed.
-        </p>
-
-        {createdOrder?.orderNumber ? (
-          <div className="success-order-number">
-            Order #{createdOrder.orderNumber}
-          </div>
-        ) : createdOrder?.id ? (
-          <div className="success-order-number">
-            Order #{createdOrder.id}
-          </div>
-        ) : null}
-
-        <div className="success-progress">
-          <div className="success-progress-bar"></div>
-        </div>
-
-        <span className="success-redirect-text">
-          Taking you to your orders...
-        </span>
-
-      </div>
-
-      <style>{`
-        .order-success-page {
-          min-height: 75vh;
-          background: #f8f6f1;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          padding: 40px 20px;
-
-          animation:
-            successPageIn
-            0.4s ease;
-        }
-
-        .success-card {
-          width: 100%;
-          max-width: 500px;
-
-          background: #fff;
-
-          border-radius: 18px;
-
-          padding: 50px 35px;
-
-          text-align: center;
-
-          box-shadow:
-            0 20px 60px
-            rgba(0, 0, 0, 0.10);
-
-          animation:
-            successCardIn
-            0.6s
-            cubic-bezier(
-              0.175,
-              0.885,
-              0.32,
-              1.275
-            );
-        }
-
-        .success-circle {
-          width: 90px;
-          height: 90px;
-
-          margin: 0 auto 25px;
-
-          border-radius: 50%;
-
-          background: #218838;
-
-          color: #fff;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          font-size: 42px;
-
-          animation:
-            successCircleIn
-            0.7s
-            cubic-bezier(
-              0.175,
-              0.885,
-              0.32,
-              1.275
-            );
-
-          box-shadow:
-            0 10px 30px
-            rgba(33, 136, 56, 0.25);
-        }
-
-        .success-circle i {
-          animation:
-            checkIn
-            0.45s
-            0.35s
-            both;
-        }
-
-        .success-card h1 {
-          color: #222;
-
-          font-size: 32px;
-
-          margin:
-            0 0 10px;
-
-          animation:
-            successTextIn
-            0.5s
-            0.25s
-            both;
-        }
-
-        .success-card > p {
-          color: #777;
-
-          font-size: 14px;
-
-          margin:
-            0 0 20px;
-
-          animation:
-            successTextIn
-            0.5s
-            0.35s
-            both;
-        }
-
-        .success-order-number {
-          display: inline-block;
-
-          padding:
-            9px 16px;
-
-          border-radius: 20px;
-
-          background:
-            #fff0f1;
-
-          color:
-            #e63946;
-
-          font-size: 13px;
-
-          font-weight: 800;
-
-          margin-bottom: 25px;
-
-          animation:
-            successTextIn
-            0.5s
-            0.45s
-            both;
-        }
-
-        .success-progress {
-          width: 100%;
-
-          height: 4px;
-
-          background:
-            #eeeeee;
-
-          border-radius: 10px;
-
-          overflow: hidden;
-
-          margin-top: 5px;
-        }
-
-        .success-progress-bar {
-          width: 0%;
-
-          height: 100%;
-
-          background:
-            #e63946;
-
-          border-radius: 10px;
-
-          animation:
-            successProgress
-            2.1s
-            linear
-            forwards;
-        }
-
-        .success-redirect-text {
-          display: block;
-
-          color: #999;
-
-          font-size: 11px;
-
-          margin-top: 12px;
-        }
-
-        @keyframes successPageIn {
-          from {
-            opacity: 0;
+  if (orderSuccess) {
+    return (
+      <>
+        <style>{`
+          .success-page {
+            min-height: 100vh;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            padding: 20px;
           }
 
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes successCardIn {
-          from {
-            opacity: 0;
-            transform:
-              translateY(30px)
-              scale(0.92);
-          }
-
-          to {
-            opacity: 1;
-            transform:
-              translateY(0)
-              scale(1);
-          }
-        }
-
-        @keyframes successCircleIn {
-          from {
-            transform:
-              scale(0);
-            opacity: 0;
-          }
-
-          to {
-            transform:
-              scale(1);
-            opacity: 1;
-          }
-        }
-
-        @keyframes checkIn {
-          from {
-            transform:
-              scale(0)
-              rotate(-45deg);
-            opacity: 0;
-          }
-
-          to {
-            transform:
-              scale(1)
-              rotate(0);
-            opacity: 1;
-          }
-        }
-
-        @keyframes successTextIn {
-          from {
-            opacity: 0;
-            transform:
-              translateY(10px);
-          }
-
-          to {
-            opacity: 1;
-            transform:
-              translateY(0);
-          }
-        }
-
-        @keyframes successProgress {
-          from {
-            width: 0%;
-          }
-
-          to {
+          .success-card {
             width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 24px;
+            padding: 45px 30px;
+            text-align: center;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.10);
+          }
+
+          .success-circle {
+            width: 82px;
+            height: 82px;
+            margin: 0 auto 22px;
+            border-radius: 50%;
+            background: #dcfce7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #16a34a;
+            font-size: 42px;
+            font-weight: 700;
+            animation: successPop 0.45s ease-out;
+          }
+
+          @keyframes successPop {
+            0% {
+              transform: scale(0.5);
+              opacity: 0;
+            }
+
+            100% {
+              transform: scale(1);
+              opacity: 1;
+            }
+          }
+
+          .success-card h1 {
+            margin: 0 0 10px;
+            color: #111827;
+            font-size: 30px;
+          }
+
+          .success-card p {
+            color: #64748b;
+            margin: 8px 0;
+          }
+
+          .order-number {
+            margin: 20px 0;
+            padding: 14px;
+            border-radius: 12px;
+            background: #f8fafc;
+            font-weight: 700;
+            color: #334155;
+          }
+
+          .redirect-text {
+            margin-top: 25px;
+            font-size: 13px;
+            color: #94a3b8;
+          }
+
+          .progress {
+            height: 4px;
+            width: 100%;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+          }
+
+          .progress-bar {
+            height: 100%;
+            width: 0;
+            background: #16a34a;
+            animation: progress 2.2s linear forwards;
+          }
+
+          @keyframes progress {
+            from {
+              width: 0;
+            }
+
+            to {
+              width: 100%;
+            }
+          }
+        `}</style>
+
+        <div className="success-page">
+          <div className="success-card">
+
+            <div className="success-circle">
+              ✓
+            </div>
+
+            <h1>
+              Order Placed!
+            </h1>
+
+            <p>
+              Thank you for your order.
+            </p>
+
+            <p>
+              Your order has been successfully
+              received.
+            </p>
+
+            {createdOrder?.orderNumber && (
+              <div className="order-number">
+                Order Number:{" "}
+                {createdOrder.orderNumber}
+              </div>
+            )}
+
+            {!createdOrder?.orderNumber &&
+              createdOrder?.orderId && (
+                <div className="order-number">
+                  Order ID:{" "}
+                  {createdOrder.orderId}
+                </div>
+              )}
+
+            <div className="redirect-text">
+              Redirecting to your orders...
+            </div>
+
+            <div className="progress">
+              <div className="progress-bar" />
+            </div>
+
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // =========================================================
+  // MAIN CHECKOUT
+  // =========================================================
+
+  return (
+    <>
+      <style>{`
+
+        * {
+          box-sizing: border-box;
+        }
+
+        .checkout-page {
+          min-height: 100vh;
+          background: #f8fafc;
+          font-family: Arial, Helvetica, sans-serif;
+          padding: 35px 20px 60px;
+          color: #111827;
+        }
+
+        .checkout-container {
+          max-width: 1250px;
+          margin: 0 auto;
+        }
+
+        .checkout-header {
+          margin-bottom: 28px;
+        }
+
+        .checkout-header h1 {
+          margin: 0;
+          font-size: 30px;
+          color: #111827;
+        }
+
+        .checkout-header p {
+          margin: 8px 0 0;
+          color: #64748b;
+          font-size: 15px;
+        }
+
+        .checkout-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 390px;
+          gap: 25px;
+          align-items: start;
+        }
+
+        .left-column {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .checkout-card {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 25px;
+          box-shadow: 0 5px 20px rgba(15,23,42,0.04);
+        }
+
+        .card-heading {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 6px;
+        }
+
+        .card-icon {
+          width: 40px;
+          height: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: #fef2f2;
+          color: #c62828;
+          border-radius: 10px;
+          font-size: 18px;
+        }
+
+        .card-heading h2 {
+          margin: 0;
+          font-size: 19px;
+          color: #111827;
+        }
+
+        .card-description {
+          margin: 0 0 22px 52px;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        /* =====================================================
+           PRODUCT
+        ===================================================== */
+
+        .product-confirmation {
+          border: 1px solid #e2e8f0;
+          border-radius: 14px;
+          padding: 18px;
+          background: #f8fafc;
+        }
+
+        .product-confirmation-title {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 800;
+          color: #334155;
+          margin-bottom: 16px;
+          text-transform: uppercase;
+          letter-spacing: 0.3px;
+        }
+
+        .product-confirmation-title span {
+          color: #16a34a;
+        }
+
+        .confirmation-main {
+          display: grid;
+          grid-template-columns: 100px minmax(0, 1fr);
+          gap: 18px;
+        }
+
+        .confirmation-image {
+          width: 100px;
+          height: 100px;
+          border-radius: 12px;
+          overflow: hidden;
+          background: white;
+          border: 1px solid #e5e7eb;
+        }
+
+        .confirmation-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        .confirmation-info h3 {
+          margin: 0 0 5px;
+          font-size: 18px;
+          color: #111827;
+        }
+
+        .confirmation-category {
+          display: inline-block;
+          background: #fee2e2;
+          color: #991b1b;
+          padding: 4px 9px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
+          margin-bottom: 12px;
+        }
+
+        .variant-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
+        }
+
+        .variant-info {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 9px;
+          padding: 9px 10px;
+        }
+
+        .variant-label {
+          display: block;
+          color: #94a3b8;
+          font-size: 10px;
+          text-transform: uppercase;
+          font-weight: 700;
+          margin-bottom: 4px;
+        }
+
+        .variant-value {
+          display: block;
+          color: #334155;
+          font-size: 13px;
+          font-weight: 700;
+          word-break: break-word;
+        }
+
+        .variant-price {
+          color: #c62828;
+          font-size: 16px;
+        }
+
+        .no-variant {
+          background: #fff;
+          border: 1px dashed #cbd5e1;
+          padding: 12px;
+          border-radius: 9px;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        /* =====================================================
+           FORM
+        ===================================================== */
+
+        .form-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+        }
+
+        .form-group.full {
+          grid-column: 1 / -1;
+        }
+
+        .form-group label {
+          font-size: 13px;
+          font-weight: 700;
+          color: #334155;
+        }
+
+        .required {
+          color: #dc2626;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+          width: 100%;
+          border: 1px solid #dbe1e8;
+          background: white;
+          border-radius: 9px;
+          padding: 12px 13px;
+          font-size: 14px;
+          color: #1e293b;
+          outline: none;
+          transition: 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+          border-color: #c62828;
+          box-shadow: 0 0 0 3px rgba(198,40,40,0.08);
+        }
+
+        .form-group input:read-only {
+          background: #f8fafc;
+          color: #64748b;
+        }
+
+        .form-group textarea {
+          min-height: 100px;
+          resize: vertical;
+        }
+
+        /* =====================================================
+           SAVED ADDRESS
+        ===================================================== */
+
+        .saved-address-wrapper {
+          width: 100%;
+        }
+
+        .saved-address-card {
+          border: 1px solid #dbe5ef;
+          border-radius: 14px;
+          background: #ffffff;
+          overflow: hidden;
+        }
+
+        .saved-address-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 18px;
+          background: #f8fafc;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .saved-address-title {
+          color: #111827;
+          font-size: 16px;
+          font-weight: 800;
+        }
+
+        .saved-address-subtitle {
+          color: #64748b;
+          font-size: 12px;
+          margin-top: 4px;
+        }
+
+        .saved-badge {
+          background: #dcfce7;
+          color: #15803d;
+          font-size: 10px;
+          font-weight: 800;
+          padding: 5px 9px;
+          border-radius: 20px;
+        }
+
+        .saved-address-content {
+          padding: 18px;
+          color: #475569;
+          font-size: 14px;
+          line-height: 1.7;
+        }
+
+        .saved-name {
+          color: #111827;
+          font-size: 16px;
+          font-weight: 800;
+          margin-bottom: 4px;
+        }
+
+        .saved-mobile {
+          margin-top: 8px;
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        .saved-address-actions {
+          display: flex;
+          gap: 10px;
+          padding: 0 18px 18px;
+        }
+
+        .use-address-btn,
+        .edit-address-btn {
+          border: none;
+          border-radius: 9px;
+          padding: 11px 15px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 800;
+          transition: 0.2s;
+        }
+
+        .use-address-btn {
+          background: #c62828;
+          color: white;
+        }
+
+        .use-address-btn:hover {
+          background: #a91f1f;
+        }
+
+        .edit-address-btn {
+          background: #f1f5f9;
+          color: #334155;
+          border: 1px solid #dbe1e8;
+        }
+
+        .edit-address-btn:hover {
+          background: #e2e8f0;
+        }
+
+        .new-address-btn {
+          margin-top: 12px;
+          width: 100%;
+          border: 1px dashed #c62828;
+          background: #fffafa;
+          color: #c62828;
+          padding: 12px;
+          border-radius: 9px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 800;
+        }
+
+        .new-address-btn:hover {
+          background: #fef2f2;
+        }
+
+        .save-address-option {
+          grid-column: 1 / -1;
+          padding-top: 3px;
+        }
+
+        .save-address-label {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          cursor: pointer;
+          color: #334155;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .save-address-label input {
+          width: 17px;
+          height: 17px;
+          accent-color: #c62828;
+          cursor: pointer;
+        }
+
+        .cancel-edit-btn {
+          grid-column: 1 / -1;
+          border: 1px solid #dbe1e8;
+          background: #f8fafc;
+          color: #475569;
+          padding: 10px 14px;
+          border-radius: 9px;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 700;
+        }
+
+        .cancel-edit-btn:hover {
+          background: #f1f5f9;
+        }
+
+        /* =====================================================
+           PAYMENT
+        ===================================================== */
+
+        .payment-option {
+          border: 2px solid #c62828;
+          border-radius: 12px;
+          padding: 16px;
+          display: flex;
+          align-items: center;
+          gap: 13px;
+          background: #fffafa;
+        }
+
+        .payment-radio {
+          width: 20px;
+          height: 20px;
+          accent-color: #c62828;
+        }
+
+        .payment-content {
+          flex: 1;
+        }
+
+        .payment-title {
+          font-weight: 800;
+          color: #1e293b;
+          font-size: 14px;
+        }
+
+        .payment-description {
+          color: #64748b;
+          font-size: 12px;
+          margin-top: 4px;
+        }
+
+        .payment-unavailable {
+          margin-top: 10px;
+          font-size: 11px;
+          color: #dc2626;
+          font-weight: 700;
+        }
+
+        /* =====================================================
+           SUMMARY
+        ===================================================== */
+
+        .summary-card {
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 23px;
+          position: sticky;
+          top: 20px;
+          box-shadow: 0 5px 20px rgba(15,23,42,0.04);
+        }
+
+        .summary-card h2 {
+          margin: 0 0 20px;
+          font-size: 20px;
+          color: #111827;
+        }
+
+        .summary-product {
+          display: flex;
+          gap: 13px;
+          padding-bottom: 17px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .summary-image {
+          width: 72px;
+          height: 72px;
+          border-radius: 10px;
+          border: 1px solid #e5e7eb;
+          overflow: hidden;
+          flex-shrink: 0;
+        }
+
+        .summary-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+
+        .summary-product-info {
+          min-width: 0;
+        }
+
+        .summary-product-info h3 {
+          margin: 0 0 5px;
+          font-size: 14px;
+          line-height: 1.35;
+          color: #1e293b;
+        }
+
+        .summary-category {
+          font-size: 10px;
+          color: #64748b;
+          margin-bottom: 5px;
+        }
+
+        .summary-variant {
+          font-size: 11px;
+          color: #475569;
+          line-height: 1.5;
+        }
+
+        .summary-variant strong {
+          color: #1e293b;
+        }
+
+        .summary-price {
+          margin-top: 5px;
+          font-weight: 800;
+          color: #c62828;
+        }
+
+        .old-price {
+          color: #94a3b8;
+          text-decoration: line-through;
+          font-weight: 400;
+          margin-left: 6px;
+          font-size: 12px;
+        }
+
+        .quantity-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 17px 0;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .quantity-label {
+          font-size: 13px;
+          font-weight: 700;
+          color: #475569;
+        }
+
+        .quantity-controls {
+          display: flex;
+          align-items: center;
+          border: 1px solid #dbe1e8;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+
+        .quantity-controls button {
+          width: 34px;
+          height: 34px;
+          border: none;
+          background: #f8fafc;
+          cursor: pointer;
+          font-size: 18px;
+          color: #334155;
+        }
+
+        .quantity-controls button:hover {
+          background: #f1f5f9;
+        }
+
+        .quantity-controls button:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+
+        .quantity-number {
+          width: 38px;
+          text-align: center;
+          font-weight: 700;
+          font-size: 13px;
+        }
+
+        .price-details {
+          padding: 17px 0;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .price-row {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 11px;
+          font-size: 13px;
+          color: #64748b;
+        }
+
+        .price-row:last-child {
+          margin-bottom: 0;
+        }
+
+        .free-shipping {
+          color: #16a34a;
+          font-weight: 700;
+        }
+
+        .discount-text {
+          color: #16a34a;
+        }
+
+        .total-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 18px 0;
+        }
+
+        .total-label {
+          font-size: 16px;
+          font-weight: 800;
+          color: #111827;
+        }
+
+        .total-value {
+          font-size: 22px;
+          font-weight: 900;
+          color: #c62828;
+        }
+
+        .place-order-btn {
+          width: 100%;
+          border: none;
+          border-radius: 10px;
+          background: #c62828;
+          color: white;
+          padding: 14px;
+          font-size: 15px;
+          font-weight: 800;
+          cursor: pointer;
+          transition: 0.2s;
+        }
+
+        .place-order-btn:hover {
+          background: #a91f1f;
+        }
+
+        .place-order-btn:disabled {
+          background: #94a3b8;
+          cursor: not-allowed;
+        }
+
+        .secure-text {
+          text-align: center;
+          margin: 13px 0 18px;
+          font-size: 11px;
+          color: #94a3b8;
+        }
+
+        .back-btn {
+          width: 100%;
+          border: 1px solid #dbe1e8;
+          background: white;
+          color: #475569;
+          padding: 11px;
+          border-radius: 9px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 700;
+        }
+
+        .back-btn:hover {
+          background: #f8fafc;
+        }
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+        @media (max-width: 900px) {
+          .checkout-layout {
+            grid-template-columns: 1fr;
+          }
+
+          .summary-card {
+            position: static;
           }
         }
 
         @media (max-width: 600px) {
-
-          .order-success-page {
-            padding:
-              25px 15px;
+          .checkout-page {
+            padding: 22px 12px 40px;
           }
 
-          .success-card {
-            padding:
-              40px 22px;
+          .checkout-header h1 {
+            font-size: 25px;
           }
 
-          .success-circle {
-            width: 78px;
-            height: 78px;
-
-            font-size: 34px;
+          .checkout-card {
+            padding: 18px;
           }
 
-          .success-card h1 {
-            font-size: 28px;
+          .form-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .form-group.full {
+            grid-column: auto;
+          }
+
+          .card-description {
+            margin-left: 0;
+          }
+
+          .confirmation-main {
+            grid-template-columns: 1fr;
+          }
+
+          .confirmation-image {
+            width: 100%;
+            height: 160px;
+          }
+
+          .variant-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+
+          .variant-grid .variant-info:last-child {
+            grid-column: 1 / -1;
+          }
+
+          .saved-address-actions {
+            flex-direction: column;
+          }
+
+          .use-address-btn,
+          .edit-address-btn {
+            width: 100%;
+          }
+
+          .saved-address-header {
+            align-items: flex-start;
+            gap: 10px;
           }
         }
+
       `}</style>
-    </section>
-  );
-}
 
-  // =====================================
-  // MAIN CHECKOUT
-  // =====================================
+      <div className="checkout-page">
 
-  return (
-    <section className="checkout-page">
-      <div className="checkout-container">
+        <div className="checkout-container">
 
-        {/* HEADER */}
+          {/* =================================================
+              HEADER
+          ================================================= */}
 
-        <div className="checkout-header">
-          <span>
-            SECURE CHECKOUT
-          </span>
+          <div className="checkout-header">
 
-          <h1>
-            Complete Your{" "}
-            <strong>
-              Order
-            </strong>
-          </h1>
+            <h1>
+              Complete Your Order
+            </h1>
 
-          <div className="checkout-line"></div>
+            <p>
+              Please confirm your details and delivery information.
+            </p>
 
-          <p>
-            Please confirm your details
-            and delivery information.
-          </p>
-        </div>
+          </div>
 
-        {/* CHECKOUT FORM */}
+          <div className="checkout-layout">
 
-        <form
-          className="checkout-grid"
-          onSubmit={handlePlaceOrder}
-        >
+            {/* =================================================
+                LEFT COLUMN
+            ================================================= */}
 
-          {/* =====================================
-              LEFT
-          ===================================== */}
+            <div className="left-column">
 
-          <div className="checkout-left">
+              {/* =================================================
+                  PRODUCT CONFIRMATION
+              ================================================= */}
 
-            {/* CUSTOMER DETAILS */}
+              <div className="checkout-card">
 
-            <div className="checkout-card">
+                <div className="card-heading">
 
-              <div className="card-title">
-                <div className="title-icon">
-                  <i className="fas fa-user"></i>
+                  <div className="card-icon">
+                    ✓
+                  </div>
+
+                  <h2>
+                    Product & Variant Confirmation
+                  </h2>
+
                 </div>
 
-                <div>
+                <p className="card-description">
+                  Please confirm the product and variant you want to order.
+                </p>
+
+                <div className="product-confirmation">
+
+                  <div className="product-confirmation-title">
+                    <span>●</span>
+                    Selected Product
+                  </div>
+
+                  <div className="confirmation-main">
+
+                    <div className="confirmation-image">
+
+                      <img
+                        src={
+                          selectedVariant?.image ||
+                          product.image ||
+                          "/placeholder.png"
+                        }
+                        alt={product.name}
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "/placeholder.png";
+                        }}
+                      />
+
+                    </div>
+
+                    <div className="confirmation-info">
+
+                      <h3>
+                        {product.name}
+                      </h3>
+
+                      {product.category && (
+                        <div className="confirmation-category">
+                          {product.category}
+                        </div>
+                      )}
+
+                      {selectedVariant ? (
+                        <div className="variant-grid">
+
+                          <div className="variant-info">
+                            <span className="variant-label">
+                              Variant
+                            </span>
+
+                            <span className="variant-value">
+                              {selectedVariant.variant_name ||
+                                "—"}
+                            </span>
+                          </div>
+
+                          <div className="variant-info">
+                            <span className="variant-label">
+                              Variant Code
+                            </span>
+
+                            <span className="variant-value">
+                              {selectedVariant.variant_code ||
+                                "—"}
+                            </span>
+                          </div>
+
+                          <div className="variant-info">
+                            <span className="variant-label">
+                              Part Number
+                            </span>
+
+                            <span className="variant-value">
+                              {selectedVariant.part_number ||
+                                "—"}
+                            </span>
+                          </div>
+
+                          <div className="variant-info">
+                            <span className="variant-label">
+                              Price
+                            </span>
+
+                            <span className="variant-value variant-price">
+                              ₹
+                              {Number(
+                                selectedVariant.price ||
+                                  0
+                              ).toLocaleString(
+                                "en-IN"
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="variant-info">
+                            <span className="variant-label">
+                              Stock
+                            </span>
+
+                            <span className="variant-value">
+                              {selectedVariant.stock ??
+                                "Available"}
+                            </span>
+                          </div>
+
+                          <div className="variant-info">
+                            <span className="variant-label">
+                              Quantity
+                            </span>
+
+                            <span className="variant-value">
+                              {quantity}
+                            </span>
+                          </div>
+
+                        </div>
+                      ) : (
+                        <div className="no-variant">
+                          This product does not have a
+                          selected variant.
+                        </div>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* =================================================
+                  CUSTOMER DETAILS
+              ================================================= */}
+
+              <div className="checkout-card">
+
+                <div className="card-heading">
+
+                  <div className="card-icon">
+                    👤
+                  </div>
+
                   <h2>
                     Customer Details
                   </h2>
 
-                  <p>
-                    Your registered account
-                    information
-                  </p>
-                </div>
-              </div>
-
-              <div className="form-grid">
-
-                {/* NAME */}
-
-                <div className="form-group">
-                  <label>
-                    Full Name{" "}
-                    <span>*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={
-                      formData.fullName
-                    }
-                    readOnly
-                    className="database-field"
-                  />
-
-                  <small className="database-note">
-                    <i className="fas fa-database"></i>
-                    Saved from your account
-                  </small>
                 </div>
 
-                {/* MOBILE */}
+                <p className="card-description">
+                  Your registered account information
+                </p>
 
-                <div className="form-group">
-                  <label>
-                    Mobile Number{" "}
-                    <span>*</span>
-                  </label>
+                <div className="form-grid">
 
-                  <input
-                    type="tel"
-                    name="mobile"
-                    value={
-                      formData.mobile
-                    }
-                    readOnly
-                    className="database-field"
-                  />
+                  <div className="form-group">
 
-                  <small className="database-note">
-                    <i className="fas fa-database"></i>
-                    Saved from your account
-                  </small>
-                </div>
+                    <label>
+                      Full Name{" "}
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
-                {/* EMAIL */}
+                    <input
+                      type="text"
+                      name="fullName"
+                      value={formData.fullName}
+                      readOnly
+                    />
 
-                <div className="form-group">
-                  <label>
-                    Email Address{" "}
-                    <span>*</span>
-                  </label>
+                  </div>
 
-                  <input
-                    type="email"
-                    name="email"
-                    value={
-                      formData.email
-                    }
-                    readOnly
-                    className="database-field"
-                  />
+                  <div className="form-group">
 
-                  <small className="database-note">
-                    <i className="fas fa-database"></i>
-                    Saved from your account
-                  </small>
-                </div>
+                    <label>
+                      Mobile Number{" "}
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
-                {/* COMPANY */}
+                    <input
+                      type="text"
+                      name="mobile"
+                      value={formData.mobile}
+                      readOnly
+                    />
 
-                <div className="form-group">
-                  <label>
-                    Company Name
-                  </label>
+                  </div>
 
-                  <input
-                    type="text"
-                    name="companyName"
-                    value={
-                      formData.companyName
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Company / Business name"
-                  />
-                </div>
+                  <div className="form-group">
 
-                {/* GST */}
+                    <label>
+                      Email Address{" "}
+                      <span className="required">
+                        *
+                      </span>
+                    </label>
 
-                <div className="form-group full-width">
-                  <label>
-                    GST Number
-                  </label>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      readOnly
+                    />
 
-                  <input
-                    type="text"
-                    name="gstNumber"
-                    value={
-                      formData.gstNumber
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Optional"
-                  />
+                  </div>
+
+                  <div className="form-group">
+
+                    <label>
+                      Company Name
+                    </label>
+
+                    <input
+                      type="text"
+                      name="companyName"
+                      value={
+                        formData.companyName
+                      }
+                      onChange={handleChange}
+                      placeholder="Enter company name"
+                    />
+
+                  </div>
+
+                  <div className="form-group">
+
+                    <label>
+                      GST Number
+                    </label>
+
+                    <input
+                      type="text"
+                      name="gstNumber"
+                      value={
+                        formData.gstNumber
+                      }
+                      onChange={handleChange}
+                      placeholder="Enter GST number"
+                    />
+
+                  </div>
+
                 </div>
 
               </div>
-            </div>
 
-            {/* SHIPPING ADDRESS */}
+              {/* =================================================
+                  SHIPPING ADDRESS
+              ================================================= */}
 
-            <div className="checkout-card">
+              <div className="checkout-card">
 
-              <div className="card-title">
-                <div className="title-icon">
-                  <i className="fas fa-map-marker-alt"></i>
-                </div>
+                <div className="card-heading">
 
-                <div>
+                  <div className="card-icon">
+                    📍
+                  </div>
+
                   <h2>
                     Shipping Address
                   </h2>
 
-                  <p>
-                    Where should we deliver
-                    your order?
-                  </p>
                 </div>
+
+                <p className="card-description">
+                  Where should we deliver your order?
+                </p>
+
+                {/* =================================================
+                    SAVED ADDRESS CARD
+                ================================================= */}
+
+                {hasSavedAddress &&
+                useSavedAddress &&
+                !editingAddress ? (
+
+                  <div className="saved-address-wrapper">
+
+                    <div className="saved-address-card">
+
+                      <div className="saved-address-header">
+
+                        <div>
+
+                          <div className="saved-address-title">
+                            ✓ Saved Address
+                          </div>
+
+                          <div className="saved-address-subtitle">
+                            Your default delivery address
+                          </div>
+
+                        </div>
+
+                        <span className="saved-badge">
+                          SAVED
+                        </span>
+
+                      </div>
+
+                      <div className="saved-address-content">
+
+                        <div className="saved-name">
+                          {formData.fullName}
+                        </div>
+
+                        <div>
+                          {formData.address1}
+                        </div>
+
+                        {formData.address2 && (
+                          <div>
+                            {formData.address2}
+                          </div>
+                        )}
+
+                        <div>
+                          {formData.area},{" "}
+                          {formData.city}
+                        </div>
+
+                        <div>
+                          {formData.state} -{" "}
+                          {formData.pincode}
+                        </div>
+
+                        <div>
+                          {formData.country}
+                        </div>
+
+                        <div className="saved-mobile">
+                          📞 {formData.mobile}
+                        </div>
+
+                      </div>
+
+                      <div className="saved-address-actions">
+
+                        <button
+                          type="button"
+                          className="use-address-btn"
+                          onClick={
+                            handleUseSavedAddress
+                          }
+                        >
+                          ✓ Use This Address
+                        </button>
+
+                        <button
+                          type="button"
+                          className="edit-address-btn"
+                          onClick={
+                            handleEditAddress
+                          }
+                        >
+                          ✏️ Edit Address
+                        </button>
+
+                      </div>
+
+                    </div>
+
+                    <button
+                      type="button"
+                      className="new-address-btn"
+                      onClick={
+                        handleUseNewAddress
+                      }
+                    >
+                      + Use a New Address
+                    </button>
+
+                  </div>
+
+                ) : (
+
+                  /* =================================================
+                     ADDRESS FORM
+                  ================================================= */
+
+                  <div className="form-grid">
+
+                    <div className="form-group full">
+
+                      <label>
+                        Address Line 1{" "}
+                        <span className="required">
+                          *
+                        </span>
+                      </label>
+
+                      <input
+                        type="text"
+                        name="address1"
+                        value={
+                          formData.address1
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="House / Building / Street"
+                      />
+
+                    </div>
+
+                    <div className="form-group full">
+
+                      <label>
+                        Address Line 2
+                      </label>
+
+                      <input
+                        type="text"
+                        name="address2"
+                        value={
+                          formData.address2
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="Apartment / Landmark"
+                      />
+
+                    </div>
+
+                    <div className="form-group">
+
+                      <label>
+                        Area / Locality{" "}
+                        <span className="required">
+                          *
+                        </span>
+                      </label>
+
+                      <input
+                        type="text"
+                        name="area"
+                        value={
+                          formData.area
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="Area / Locality"
+                      />
+
+                    </div>
+
+                    <div className="form-group">
+
+                      <label>
+                        City{" "}
+                        <span className="required">
+                          *
+                        </span>
+                      </label>
+
+                      <input
+                        type="text"
+                        name="city"
+                        value={
+                          formData.city
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="City"
+                      />
+
+                    </div>
+
+                    <div className="form-group">
+
+                      <label>
+                        State{" "}
+                        <span className="required">
+                          *
+                        </span>
+                      </label>
+
+                      <input
+                        type="text"
+                        name="state"
+                        value={
+                          formData.state
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        placeholder="State"
+                      />
+
+                    </div>
+
+                    <div className="form-group">
+
+                      <label>
+                        PIN Code{" "}
+                        <span className="required">
+                          *
+                        </span>
+                      </label>
+
+                      <input
+                        type="text"
+                        name="pincode"
+                        value={
+                          formData.pincode
+                        }
+                        onChange={
+                          handleChange
+                        }
+                        maxLength={6}
+                        placeholder="6-digit PIN"
+                      />
+
+                    </div>
+
+                    <div className="form-group">
+
+                      <label>
+                        Country
+                      </label>
+
+                      <input
+                        type="text"
+                        name="country"
+                        value={
+                          formData.country
+                        }
+                        readOnly
+                      />
+
+                    </div>
+
+                    {/* =================================================
+                        SAVE ADDRESS CHECKBOX
+                    ================================================= */}
+
+                    <div className="save-address-option">
+
+                      <label className="save-address-label">
+
+                        <input
+                          type="checkbox"
+                          checked={
+                            saveAddress
+                          }
+                          onChange={(e) =>
+                            setSaveAddress(
+                              e.target.checked
+                            )
+                          }
+                        />
+
+                        <span>
+                          Save this address for future orders
+                        </span>
+
+                      </label>
+
+                    </div>
+
+                    {/* =================================================
+                        CANCEL EDIT
+                    ================================================= */}
+
+                    {hasSavedAddress &&
+                    editingAddress && (
+                      <button
+                        type="button"
+                        className="cancel-edit-btn"
+                        onClick={
+                          handleCancelAddressEdit
+                        }
+                      >
+                        ← Cancel & Use Saved Address
+                      </button>
+                    )}
+
+                  </div>
+
+                )}
+
               </div>
 
-              <div className="form-grid">
+              {/* =================================================
+                  PAYMENT
+              ================================================= */}
 
-                {/* ADDRESS 1 */}
+              <div className="checkout-card">
 
-                <div className="form-group full-width">
-                  <label>
-                    Address Line 1{" "}
-                    <span>*</span>
-                  </label>
+                <div className="card-heading">
 
-                  <input
-                    type="text"
-                    name="address1"
-                    value={
-                      formData.address1
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="House / Flat / Plot number, Street"
-                    required
-                  />
-                </div>
+                  <div className="card-icon">
+                    💳
+                  </div>
 
-                {/* ADDRESS 2 */}
-
-                <div className="form-group full-width">
-                  <label>
-                    Address Line 2
-                  </label>
-
-                  <input
-                    type="text"
-                    name="address2"
-                    value={
-                      formData.address2
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Building, landmark etc. (optional)"
-                  />
-                </div>
-
-                {/* AREA */}
-
-                <div className="form-group">
-                  <label>
-                    Area / Locality{" "}
-                    <span>*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    name="area"
-                    value={
-                      formData.area
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="Area / Locality"
-                    required
-                  />
-                </div>
-
-                {/* CITY */}
-
-                <div className="form-group">
-                  <label>
-                    City{" "}
-                    <span>*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    name="city"
-                    value={
-                      formData.city
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="City"
-                    required
-                  />
-                </div>
-
-                {/* STATE */}
-
-                <div className="form-group">
-                  <label>
-                    State{" "}
-                    <span>*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    name="state"
-                    value={
-                      formData.state
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="State"
-                    required
-                  />
-                </div>
-
-                {/* PIN */}
-
-                <div className="form-group">
-                  <label>
-                    PIN Code{" "}
-                    <span>*</span>
-                  </label>
-
-                  <input
-                    type="text"
-                    name="pincode"
-                    value={
-                      formData.pincode
-                    }
-                    onChange={
-                      handleChange
-                    }
-                    placeholder="6 digit PIN"
-                    maxLength={6}
-                    required
-                  />
-                </div>
-
-                {/* COUNTRY */}
-
-                <div className="form-group full-width">
-                  <label>
-                    Country
-                  </label>
-
-                  <input
-                    type="text"
-                    name="country"
-                    value={
-                      formData.country
-                    }
-                    readOnly
-                    className="database-field"
-                  />
-                </div>
-
-              </div>
-            </div>
-
-            {/* PAYMENT */}
-
-            <div className="checkout-card">
-
-              <div className="card-title">
-                <div className="title-icon">
-                  <i className="fas fa-credit-card"></i>
-                </div>
-
-                <div>
                   <h2>
                     Payment Method
                   </h2>
 
-                  <p>
-                    Select your preferred
-                    payment method
-                  </p>
                 </div>
-              </div>
 
-              <div className="payment-options">
+                <p className="card-description">
+                  Select your preferred payment method
+                </p>
 
-                {/* COD */}
+                <div className="payment-option">
 
-                <label
-                  className={
-                    formData.paymentMethod ===
-                    "COD"
-                      ? "payment-option active"
-                      : "payment-option"
-                  }
-                >
                   <input
                     type="radio"
-                    name="paymentMethod"
-                    value="COD"
+                    className="payment-radio"
                     checked={
                       formData.paymentMethod ===
                       "COD"
                     }
-                    onChange={
-                      handleChange
+                    onChange={() =>
+                      setFormData(
+                        (prev) => ({
+                          ...prev,
+                          paymentMethod:
+                            "COD",
+                        })
+                      )
                     }
                   />
 
-                  <div className="payment-icon">
-                    <i className="fas fa-money-bill-wave"></i>
-                  </div>
+                  <div className="payment-content">
 
-                  <div>
-                    <strong>
+                    <div className="payment-title">
                       Cash on Delivery
-                    </strong>
+                    </div>
 
-                    <small>
-                      Pay when your order
-                      arrives
-                    </small>
+                    <div className="payment-description">
+                      Pay when your order arrives
+                    </div>
+
                   </div>
-                </label>
 
-                {/* ONLINE PAYMENT */}
+                </div>
 
-                <label className="payment-option payment-option-disabled">
+                <div
+                  className="payment-option"
+                  style={{
+                    marginTop: 12,
+                    borderColor:
+                      "#e5e7eb",
+                    background:
+                      "#f8fafc",
+                    opacity: 0.7,
+                  }}
+                >
 
                   <input
                     type="radio"
-                    name="paymentMethod"
-                    value="ONLINE"
+                    className="payment-radio"
                     disabled
                   />
 
-                  <div className="payment-icon">
-                    <i className="fas fa-mobile-alt"></i>
-                  </div>
-
                   <div className="payment-content">
-                    <strong>
+
+                    <div className="payment-title">
                       Online Payment
-                    </strong>
+                    </div>
 
-                    <small>
+                    <div className="payment-description">
                       UPI / Card / Net Banking
-                    </small>
+                    </div>
 
-                    <span className="payment-unavailable">
-                      <i className="fas fa-clock"></i>
+                    <div className="payment-unavailable">
                       Currently Unavailable
-                    </span>
+                    </div>
+
                   </div>
 
-                </label>
-
-              </div>
-            </div>
-
-            {/* ORDER NOTES */}
-
-            <div className="checkout-card">
-
-              <div className="card-title">
-                <div className="title-icon">
-                  <i className="fas fa-comment-alt"></i>
                 </div>
 
-                <div>
+              </div>
+
+              {/* =================================================
+                  NOTES
+              ================================================= */}
+
+              <div className="checkout-card">
+
+                <div className="card-heading">
+
+                  <div className="card-icon">
+                    📝
+                  </div>
+
                   <h2>
                     Order Notes
                   </h2>
 
-                  <p>
-                    Any special instructions?
-                  </p>
                 </div>
-              </div>
 
-              <div className="form-group">
-                <textarea
-                  name="notes"
-                  value={
-                    formData.notes
-                  }
-                  onChange={
-                    handleChange
-                  }
-                  placeholder="Example: Please call before delivery..."
-                  rows={5}
-                ></textarea>
+                <p className="card-description">
+                  Any special instructions?
+                </p>
+
+                <div className="form-group">
+
+                  <textarea
+                    name="notes"
+                    value={
+                      formData.notes
+                    }
+                    onChange={
+                      handleChange
+                    }
+                    placeholder="Write any special instructions for your order..."
+                  />
+
+                </div>
+
               </div>
 
             </div>
 
-          </div>
+            {/* =================================================
+                RIGHT SUMMARY
+            ================================================= */}
 
-          {/* =====================================
-              RIGHT
-          ===================================== */}
+            <div className="summary-card">
 
-          <div className="checkout-right">
-
-            <div className="order-summary">
-
-              {/* HEADER */}
-
-              <div className="summary-header">
-                <h2>
-                  Order Summary
-                </h2>
-
-                <span>
-                  1 Product
-                </span>
-              </div>
+              <h2>
+                Order Summary
+              </h2>
 
               {/* PRODUCT */}
 
               <div className="summary-product">
 
                 <div className="summary-image">
+
                   <img
-                    src={product.image}
+                    src={
+                      selectedVariant?.image ||
+                      product.image ||
+                      "/placeholder.png"
+                    }
                     alt={product.name}
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "/placeholder.png";
+                    }}
                   />
+
                 </div>
 
                 <div className="summary-product-info">
-
-                  <span>
-                    {product.category}
-                  </span>
 
                   <h3>
                     {product.name}
                   </h3>
 
-                  <p>
-                    Qty: {quantity}
-                  </p>
+                  {product.category && (
+                    <div className="summary-category">
+                      {product.category}
+                    </div>
+                  )}
 
-                </div>
+                  {selectedVariant && (
+                    <div className="summary-variant">
 
-              </div>
+                      <div>
+                        <strong>
+                          Variant:
+                        </strong>{" "}
+                        {selectedVariant.variant_name ||
+                          "—"}
+                      </div>
 
-              {/* PRICE PER ITEM */}
+                      <div>
+                        <strong>
+                          Code:
+                        </strong>{" "}
+                        {selectedVariant.variant_code ||
+                          "—"}
+                      </div>
 
-              <div className="summary-single-price">
+                      <div>
+                        <strong>
+                          Part No:
+                        </strong>{" "}
+                        {selectedVariant.part_number ||
+                          "—"}
+                      </div>
 
-                <span>
-                  Price per item
-                </span>
+                    </div>
+                  )}
 
-                <div>
+                  <div className="summary-price">
 
-                  {oldPrice !== null &&
-                    oldPrice > price && (
-                      <del>
-                        ₹
-                        {oldPrice.toLocaleString(
-                          "en-IN"
-                        )}
-                      </del>
-                    )}
-
-                  <strong>
                     ₹
                     {price.toLocaleString(
                       "en-IN"
                     )}
-                  </strong>
+
+                    {oldPrice >
+                      price && (
+                      <span className="old-price">
+                        ₹
+                        {oldPrice.toLocaleString(
+                          "en-IN"
+                        )}
+                      </span>
+                    )}
+
+                  </div>
 
                 </div>
 
@@ -1853,13 +2992,13 @@ if (orderSuccess) {
 
               {/* QUANTITY */}
 
-              <div className="summary-quantity">
+              <div className="quantity-row">
 
-                <span>
+                <span className="quantity-label">
                   Quantity
                 </span>
 
-                <div className="summary-quantity-box">
+                <div className="quantity-controls">
 
                   <button
                     type="button"
@@ -1867,23 +3006,20 @@ if (orderSuccess) {
                       decreaseQuantity
                     }
                     disabled={
-                      placingOrder
+                      quantity <= 1
                     }
                   >
                     −
                   </button>
 
-                  <strong>
+                  <span className="quantity-number">
                     {quantity}
-                  </strong>
+                  </span>
 
                   <button
                     type="button"
                     onClick={
                       increaseQuantity
-                    }
-                    disabled={
-                      placingOrder
                     }
                   >
                     +
@@ -1893,78 +3029,90 @@ if (orderSuccess) {
 
               </div>
 
-              {/* PRICE DETAILS */}
+              {/* PRICE */}
 
               <div className="price-details">
 
-                <div>
+                <div className="price-row">
+
                   <span>
-                    Price per item
+                    Product Price
                   </span>
 
-                  <strong>
+                  <span>
                     ₹
                     {price.toLocaleString(
                       "en-IN"
                     )}
-                  </strong>
+                  </span>
+
                 </div>
 
-                <div>
+                <div className="price-row">
+
                   <span>
                     Quantity
                   </span>
 
-                  <strong>
+                  <span>
                     × {quantity}
-                  </strong>
+                  </span>
+
                 </div>
 
-                <div>
+                <div className="price-row">
+
                   <span>
                     Subtotal
                   </span>
 
-                  <strong>
+                  <span>
                     ₹
                     {subtotal.toLocaleString(
                       "en-IN"
                     )}
-                  </strong>
+                  </span>
+
                 </div>
 
-                <div>
+                <div className="price-row">
+
                   <span>
                     Shipping
                   </span>
 
-                  <strong
+                  <span
                     className={
-                      shippingCharge === 0
+                      shippingCharge ===
+                      0
                         ? "free-shipping"
                         : ""
                     }
                   >
-                    {shippingCharge === 0
+                    {shippingCharge ===
+                    0
                       ? "FREE"
                       : `₹${shippingCharge.toLocaleString(
                           "en-IN"
                         )}`}
-                  </strong>
+                  </span>
+
                 </div>
 
                 {discount > 0 && (
-                  <div>
+                  <div className="price-row">
+
                     <span>
                       Discount
                     </span>
 
-                    <strong className="discount">
+                    <span className="discount-text">
                       - ₹
                       {discount.toLocaleString(
                         "en-IN"
                       )}
-                    </strong>
+                    </span>
+
                   </div>
                 )}
 
@@ -1972,968 +3120,61 @@ if (orderSuccess) {
 
               {/* TOTAL */}
 
-              <div className="grand-total">
+              <div className="total-row">
 
-                <span>
+                <span className="total-label">
                   Grand Total
                 </span>
 
-                <strong>
+                <span className="total-value">
                   ₹
                   {grandTotal.toLocaleString(
                     "en-IN"
                   )}
-                </strong>
+                </span>
 
               </div>
 
               {/* PLACE ORDER */}
-<button
-  type="submit"
-  className="place-order-btn"
-  disabled={placingOrder}
->
-  {placingOrder ? (
-    <>
-      <i className="fas fa-spinner fa-spin"></i>
-      Placing Order...
-    </>
-  ) : (
-    <>
-      <i className="fas fa-lock"></i>
-      Place Order
-      <i className="fas fa-arrow-right"></i>
-    </>
-  )}
-</button>
-
-
-              {/* SECURITY */}
-
-              <p className="secure-text">
-
-                <i className="fas fa-shield-alt"></i>
-
-                Your information is secure.
-
-              </p>
-
-              {/* BACK */}
 
               <button
-                type="button"
-                className="continue-shopping"
-                onClick={() =>
-                  navigate(
-                    `/product/${product.id}`
-                  )
+                className="place-order-btn"
+                onClick={
+                  handlePlaceOrder
                 }
                 disabled={
-                  placingOrder
+                  placingOrder ||
+                  savingAddress
                 }
               >
+                {placingOrder
+                  ? "Placing Order..."
+                  : savingAddress
+                  ? "Saving Address..."
+                  : "Place Order"}
+              </button>
 
-                <i className="fas fa-arrow-left"></i>
+              <div className="secure-text">
+                🔒 Your information is securely protected
+              </div>
 
-                Back to Product
-
+              <button
+                className="back-btn"
+                onClick={() =>
+                  navigate(-1)
+                }
+              >
+                ← Back to Product
               </button>
 
             </div>
 
           </div>
 
-        </form>
+        </div>
 
       </div>
-
-      {/* =====================================
-          CSS
-      ===================================== */}
-
-      <style>{`
-
-        * {
-          box-sizing: border-box;
-        }
-
-        .checkout-page {
-          min-height: 75vh;
-          background: #f8f6f1;
-          padding: 70px 20px;
-        }
-
-        .checkout-container {
-          width: 100%;
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        /* HEADER */
-
-        .checkout-header {
-          text-align: center;
-          margin-bottom: 40px;
-        }
-
-        .checkout-header > span {
-          color: #e63946;
-          font-size: 12px;
-          font-weight: 800;
-          letter-spacing: 3px;
-        }
-
-        .checkout-header h1 {
-          color: #222;
-          font-size: 40px;
-          margin: 10px 0;
-        }
-
-        .checkout-header h1 strong {
-          color: #e63946;
-        }
-
-        .checkout-line {
-          width: 60px;
-          height: 3px;
-          background: #e63946;
-          margin: 15px auto;
-        }
-
-        .checkout-header p {
-          color: #777;
-          margin: 0;
-        }
-
-        /* GRID */
-
-        .checkout-grid {
-          display: grid;
-
-          grid-template-columns:
-            minmax(0, 1.7fr)
-            minmax(320px, 0.9fr);
-
-          gap: 25px;
-
-          align-items: start;
-        }
-
-        .checkout-left {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        /* CARD */
-
-        .checkout-card {
-          background: #fff;
-
-          border: 1px solid #eee;
-          border-radius: 12px;
-
-          padding: 28px;
-
-          box-shadow:
-            0 8px 25px
-            rgba(0, 0, 0, 0.05);
-        }
-
-        /* CARD TITLE */
-
-        .card-title {
-          display: flex;
-          align-items: center;
-
-          gap: 14px;
-
-          margin-bottom: 25px;
-          padding-bottom: 18px;
-
-          border-bottom:
-            1px solid #eee;
-        }
-
-        .title-icon {
-          width: 42px;
-          height: 42px;
-
-          border-radius: 50%;
-
-          background: #fff0f1;
-          color: #e63946;
-
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          flex-shrink: 0;
-        }
-
-        .card-title h2 {
-          color: #222;
-
-          font-size: 19px;
-
-          margin:
-            0 0 3px;
-        }
-
-        .card-title p {
-          color: #888;
-
-          font-size: 12px;
-
-          margin: 0;
-        }
-
-        /* FORM */
-
-        .form-grid {
-          display: grid;
-
-          grid-template-columns:
-            1fr 1fr;
-
-          gap: 18px;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-        }
-
-        .form-group.full-width {
-          grid-column: 1 / -1;
-        }
-
-        .form-group label {
-          color: #444;
-
-          font-size: 13px;
-
-          font-weight: 700;
-
-          margin-bottom: 7px;
-        }
-
-        .form-group label span {
-          color: #e63946;
-        }
-
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-          width: 100%;
-
-          border:
-            1px solid #ddd;
-
-          border-radius: 7px;
-
-          padding:
-            12px 13px;
-
-          background: #fff;
-
-          color: #222;
-
-          font-size: 14px;
-
-          outline: none;
-
-          transition: 0.2s;
-
-          font-family: inherit;
-        }
-
-        .form-group textarea {
-          resize: vertical;
-
-          min-height: 110px;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
-          border-color:
-            #e63946;
-
-          box-shadow:
-            0 0 0 3px
-            rgba(
-              230,
-              57,
-              70,
-              0.08
-            );
-        }
-
-        .form-group input::placeholder,
-        .form-group textarea::placeholder {
-          color: #aaa;
-        }
-
-        /* DATABASE FIELD */
-
-        .database-field {
-          background:
-            #f5f5f5 !important;
-
-          color:
-            #555 !important;
-
-          cursor:
-            not-allowed;
-
-          border-color:
-            #e5e5e5 !important;
-        }
-
-        .database-note {
-          color: #888;
-
-          font-size: 10px;
-
-          margin-top: 5px;
-        }
-
-        .database-note i {
-          color: #218838;
-
-          margin-right: 4px;
-        }
-
-        /* PAYMENT */
-
-        .payment-options {
-          display: grid;
-
-          grid-template-columns:
-            1fr 1fr;
-
-          gap: 12px;
-        }
-
-        .payment-option {
-          display: flex;
-
-          align-items: center;
-
-          gap: 12px;
-
-          padding: 15px;
-
-          border:
-            1px solid #ddd;
-
-          border-radius: 8px;
-
-          cursor: pointer;
-
-          transition: 0.2s;
-        }
-
-        .payment-option.active {
-          border-color:
-            #e63946;
-
-          background:
-            #fff8f8;
-        }
-
-        .payment-option input {
-          accent-color:
-            #e63946;
-        }
-
-        .payment-icon {
-          width: 38px;
-          height: 38px;
-
-          display: flex;
-
-          align-items: center;
-          justify-content: center;
-
-          border-radius: 6px;
-
-          background:
-            #fff0f1;
-
-          color:
-            #e63946;
-
-          flex-shrink: 0;
-        }
-
-        .payment-option strong {
-          display: block;
-
-          color: #333;
-
-          font-size: 13px;
-
-          margin-bottom: 3px;
-        }
-
-        .payment-option small {
-          color: #888;
-
-          font-size: 11px;
-        }
-
-        /* ONLINE PAYMENT DISABLED */
-
-        .payment-option-disabled {
-          opacity: 0.65;
-
-          cursor:
-            not-allowed !important;
-
-          background:
-            #f7f7f7;
-
-          border-color:
-            #ddd;
-
-          position: relative;
-        }
-
-        .payment-option-disabled:hover {
-          border-color:
-            #ddd;
-
-          background:
-            #f7f7f7;
-        }
-
-        .payment-option-disabled input {
-          cursor:
-            not-allowed;
-        }
-
-        .payment-option-disabled .payment-icon {
-          background:
-            #eeeeee;
-
-          color:
-            #999;
-        }
-
-        .payment-option-disabled strong {
-          color:
-            #777;
-        }
-
-        .payment-option-disabled small {
-          color:
-            #999;
-        }
-
-        .payment-content {
-          display: flex;
-
-          flex-direction: column;
-
-          min-width: 0;
-        }
-
-        .payment-unavailable {
-          display: inline-flex;
-
-          align-items: center;
-
-          gap: 5px;
-
-          margin-top: 5px;
-
-          color:
-            #e63946;
-
-          font-size: 10px;
-
-          font-weight: 700;
-        }
-
-        .payment-unavailable i {
-          font-size: 9px;
-        }
-
-        /* SUMMARY */
-
-        .checkout-right {
-          position: sticky;
-          top: 20px;
-        }
-
-        .order-summary {
-          background: #fff;
-
-          border:
-            1px solid #eee;
-
-          border-radius: 12px;
-
-          padding: 25px;
-
-          box-shadow:
-            0 10px 30px
-            rgba(
-              0,
-              0,
-              0,
-              0.07
-            );
-        }
-
-        .summary-header {
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            space-between;
-
-          padding-bottom: 18px;
-
-          border-bottom:
-            1px solid #eee;
-        }
-
-        .summary-header h2 {
-          color: #222;
-
-          font-size: 20px;
-
-          margin: 0;
-        }
-
-        .summary-header span {
-          color: #888;
-
-          font-size: 12px;
-        }
-
-        /* PRODUCT */
-
-        .summary-product {
-          display: flex;
-
-          gap: 14px;
-
-          padding: 20px 0;
-
-          border-bottom:
-            1px solid #eee;
-        }
-
-        .summary-image {
-          width: 75px;
-          height: 75px;
-
-          border-radius: 7px;
-
-          overflow: hidden;
-
-          background:
-            #f4f4f4;
-
-          flex-shrink: 0;
-        }
-
-        .summary-image img {
-          width: 100%;
-          height: 100%;
-
-          object-fit: cover;
-        }
-
-        .summary-product-info {
-          min-width: 0;
-        }
-
-        .summary-product-info > span {
-          color:
-            #e63946;
-
-          font-size: 10px;
-
-          font-weight: 800;
-
-          text-transform:
-            uppercase;
-
-          letter-spacing: 1px;
-        }
-
-        .summary-product-info h3 {
-          color: #222;
-
-          font-size: 15px;
-
-          margin:
-            5px 0;
-        }
-
-        .summary-product-info p {
-          color: #888;
-
-          font-size: 12px;
-
-          margin: 0;
-        }
-
-        /* SINGLE PRICE */
-
-        .summary-single-price {
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            space-between;
-
-          padding: 16px 0;
-
-          border-bottom:
-            1px solid #eee;
-        }
-
-        .summary-single-price span {
-          color: #555;
-
-          font-size: 13px;
-
-          font-weight: 700;
-        }
-
-        .summary-single-price div {
-          display: flex;
-
-          align-items: center;
-
-          gap: 8px;
-        }
-
-        .summary-single-price del {
-          color: #999;
-
-          font-size: 11px;
-        }
-
-        .summary-single-price strong {
-          color: #222;
-
-          font-size: 14px;
-        }
-
-        /* QUANTITY */
-
-        .summary-quantity {
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            space-between;
-
-          padding: 16px 0;
-
-          border-bottom:
-            1px solid #eee;
-        }
-
-        .summary-quantity > span {
-          color: #555;
-
-          font-size: 13px;
-
-          font-weight: 700;
-        }
-
-        .summary-quantity-box {
-          display: flex;
-
-          align-items: center;
-
-          border:
-            1px solid #ddd;
-
-          border-radius: 6px;
-
-          overflow: hidden;
-        }
-
-        .summary-quantity-box button {
-          width: 32px;
-          height: 32px;
-
-          border: none;
-
-          background:
-            #f5f5f5;
-
-          cursor: pointer;
-
-          font-size: 18px;
-        }
-
-        .summary-quantity-box button:hover:not(:disabled) {
-          background:
-            #e63946;
-
-          color: #fff;
-        }
-
-        .summary-quantity-box button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .summary-quantity-box strong {
-          width: 35px;
-
-          text-align: center;
-
-          font-size: 13px;
-        }
-
-        /* PRICE DETAILS */
-
-        .price-details {
-          padding: 18px 0;
-
-          border-bottom:
-            1px solid #eee;
-        }
-
-        .price-details > div {
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            space-between;
-
-          margin-bottom: 12px;
-        }
-
-        .price-details > div:last-child {
-          margin-bottom: 0;
-        }
-
-        .price-details span {
-          color: #777;
-
-          font-size: 13px;
-        }
-
-        .price-details strong {
-          color: #333;
-
-          font-size: 13px;
-        }
-
-        .free-shipping {
-          color:
-            #218838 !important;
-        }
-
-        .discount {
-          color:
-            #218838 !important;
-        }
-
-        /* GRAND TOTAL */
-
-        .grand-total {
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            space-between;
-
-          padding: 20px 0;
-        }
-
-        .grand-total span {
-          color: #222;
-
-          font-size: 15px;
-
-          font-weight: 800;
-        }
-
-        .grand-total strong {
-          color:
-            #e63946;
-
-          font-size: 24px;
-        }
-
-        /* PLACE ORDER */
-
-        .place-order-btn {
-          width: 100%;
-
-          display: flex;
-
-          align-items: center;
-
-          justify-content:
-            center;
-
-          gap: 10px;
-
-          padding: 15px;
-
-          border: none;
-
-          border-radius: 7px;
-
-          background:
-            #e63946;
-
-          color: #fff;
-
-          font-size: 14px;
-
-          font-weight: 800;
-
-          cursor: pointer;
-
-          transition: 0.2s;
-        }
-
-        .place-order-btn:hover:not(:disabled) {
-          background:
-            #c92f3b;
-
-          transform:
-            translateY(-1px);
-        }
-
-        .place-order-btn:disabled {
-          opacity: 0.7;
-
-          cursor:
-            not-allowed;
-
-          transform: none;
-        }
-
-        .secure-text {
-          text-align: center;
-
-          color: #888;
-
-          font-size: 11px;
-
-          margin:
-            14px 0;
-        }
-
-        .secure-text i {
-          color:
-            #218838;
-
-          margin-right: 5px;
-        }
-
-        .continue-shopping {
-          width: 100%;
-
-          border: none;
-
-          background:
-            transparent;
-
-          color: #666;
-
-          font-size: 12px;
-
-          font-weight: 700;
-
-          cursor: pointer;
-        }
-
-        .continue-shopping:hover:not(:disabled) {
-          color:
-            #e63946;
-        }
-
-        .continue-shopping:disabled {
-          opacity: 0.5;
-
-          cursor:
-            not-allowed;
-        }
-
-        .continue-shopping i {
-          margin-right: 6px;
-        }
-
-        /* TABLET */
-
-        @media (max-width: 900px) {
-
-          .checkout-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .checkout-right {
-            position: static;
-          }
-
-          .order-summary {
-            max-width: 100%;
-          }
-
-        }
-
-        /* MOBILE */
-
-        @media (max-width: 600px) {
-
-          .checkout-page {
-            padding:
-              45px 15px;
-          }
-
-          .checkout-header h1 {
-            font-size: 30px;
-          }
-
-          .checkout-card {
-            padding: 20px;
-          }
-
-          .form-grid {
-            grid-template-columns:
-              1fr;
-          }
-
-          .form-group.full-width {
-            grid-column:
-              auto;
-          }
-
-          .payment-options {
-            grid-template-columns:
-              1fr;
-          }
-
-          .order-summary {
-            padding: 20px;
-          }
-
-        }
-
-      `}</style>
-    </section>
+    </>
   );
 };
 

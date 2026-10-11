@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../assets/css/nav.css";
 
 interface SearchOverlayProps {
@@ -6,22 +7,54 @@ interface SearchOverlayProps {
   onClose: () => void;
 }
 
+interface SearchResult {
+  product_id: number;
+  product_name: string;
+  slug?: string;
+  category?: string;
+  description?: string;
+
+  product_image?: string | null;
+  product_price?: number | string | null;
+  product_old_price?: number | string | null;
+
+  variant_id?: number | null;
+  variant_name?: string | null;
+  variant_code?: string | null;
+  part_number?: string | null;
+
+  variant_price?: number | string | null;
+  variant_old_price?: number | string | null;
+
+  variant_image?: string | null;
+  pdf_path?: string | null;
+  variant_stock?: number | null;
+}
+
 function SearchOverlay({
   isOpen,
   onClose,
 }: SearchOverlayProps) {
+  const navigate = useNavigate();
 
   const [searchText, setSearchText] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(false);
+
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Overlay open hone par input focus
+  // =====================================================
+  // OPEN / CLOSE
+  // =====================================================
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
 
       setTimeout(() => {
         inputRef.current?.focus();
-      }, 220);
+      }, 150);
     } else {
       document.body.style.overflow = "";
     }
@@ -31,13 +64,24 @@ function SearchOverlay({
     };
   }, [isOpen]);
 
-  // Overlay close hone par
+  // =====================================================
+  // CLOSE
+  // =====================================================
+
   const handleClose = () => {
     document.body.style.overflow = "";
+
+    setSearchText("");
+    setResults([]);
+    setSearched(false);
+
     onClose();
   };
 
-  // Backdrop par click
+  // =====================================================
+  // BACKDROP CLICK
+  // =====================================================
+
   const handleBackdropClick = (
     e: React.MouseEvent<HTMLDivElement>
   ) => {
@@ -46,15 +90,119 @@ function SearchOverlay({
     }
   };
 
-  // Trending search
-  const handleTrendingClick = (text: string) => {
-    setSearchText(text);
-    inputRef.current?.focus();
+  // =====================================================
+  // SEARCH
+  // =====================================================
+
+  const handleSearch = async () => {
+    const query = searchText.trim();
+
+    if (!query) {
+      setResults([]);
+      setSearched(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setSearched(true);
+
+      const response = await fetch(
+        `http://localhost:5001/api/products/search?q=${encodeURIComponent(
+          query
+        )}`
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setResults(data.results || []);
+      } else {
+        setResults([]);
+      }
+    } catch (error) {
+      console.error("❌ Search Error:", error);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Search
-  const handleSearch = () => {
-    console.log("Search:", searchText);
+  // =====================================================
+  // RESULT CLICK
+  // =====================================================
+
+  const handleResultClick = (
+    result: SearchResult
+  ) => {
+    if (result.variant_id) {
+      navigate(
+        `/product/${result.product_id}?variantId=${result.variant_id}`
+      );
+    } else {
+      navigate(`/product/${result.product_id}`);
+    }
+
+    handleClose();
+  };
+
+  // =====================================================
+  // PDF
+  // =====================================================
+
+  const handlePdfClick = (
+    e: React.MouseEvent,
+    pdfPath: string
+  ) => {
+    e.stopPropagation();
+
+    window.open(
+      pdfPath,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
+  // =====================================================
+  // PRICE
+  // =====================================================
+
+  const getPrice = (
+    result: SearchResult
+  ) => {
+    return (
+      result.variant_price ??
+      result.product_price ??
+      0
+    );
+  };
+
+  // =====================================================
+  // OLD PRICE
+  // =====================================================
+
+  const getOldPrice = (
+    result: SearchResult
+  ) => {
+    return (
+      result.variant_old_price ??
+      result.product_old_price ??
+      null
+    );
+  };
+
+  // =====================================================
+  // IMAGE
+  // =====================================================
+
+  const getImage = (
+    result: SearchResult
+  ) => {
+    return (
+      result.variant_image ||
+      result.product_image ||
+      "/img/placeholder.jpg"
+    );
   };
 
   if (!isOpen) {
@@ -64,35 +212,58 @@ function SearchOverlay({
   return (
     <div
       id="searchOv"
-      className="open"
+      className="search-overlay"
       onClick={handleBackdropClick}
     >
+      {/* =================================================
+          SEARCH CONTAINER
+      ================================================= */}
 
-      {/* Close Button */}
-      <button
-        type="button"
-        className="sovclose"
-        id="searchClose"
-        onClick={handleClose}
-      >
-        <i className="fas fa-times"></i>
-      </button>
+      <div className="search-container">
 
-      <div className="sovbox">
+        {/* =================================================
+            HEADER
+        ================================================= */}
 
-        <h4>What are you craving today?</h4>
+        <div className="search-header">
 
-        {/* Search Input */}
-        <div className="sovinput">
+          <h4>
+            Search Products
+          </h4>
+
+          <button
+            type="button"
+            className="search-close"
+            onClick={handleClose}
+            aria-label="Close search"
+          >
+            <i className="fas fa-times"></i>
+          </button>
+
+        </div>
+
+        {/* =================================================
+            SEARCH INPUT
+        ================================================= */}
+
+        <div className="search-input-wrapper">
+
+          <i className="fas fa-search search-input-icon"></i>
 
           <input
             ref={inputRef}
             type="text"
-            id="searchInput"
-            placeholder="Search burgers, pizza, chicken..."
+            placeholder="Search product, variant code or part number..."
             autoComplete="off"
             value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
+            onChange={(e) => {
+              setSearchText(e.target.value);
+
+              if (!e.target.value.trim()) {
+                setResults([]);
+                setSearched(false);
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSearch();
@@ -100,8 +271,24 @@ function SearchOverlay({
             }}
           />
 
+          {searchText && (
+            <button
+              type="button"
+              className="search-clear"
+              onClick={() => {
+                setSearchText("");
+                setResults([]);
+                setSearched(false);
+                inputRef.current?.focus();
+              }}
+            >
+              <i className="fas fa-times"></i>
+            </button>
+          )}
+
           <button
             type="button"
+            className="search-submit"
             onClick={handleSearch}
           >
             <i className="fas fa-search"></i>
@@ -109,100 +296,212 @@ function SearchOverlay({
 
         </div>
 
-        {/* Categories */}
-        <div className="sovcats">
+        {/* =================================================
+            LOADING
+        ================================================= */}
 
-          <div className="sovcat active" data-cat="all">
-            <img src="/img/menu/1.jpg" alt="All Items" />
-            All Items
+        {loading && (
+          <div className="search-loading">
+
+            <i className="fas fa-spinner fa-spin"></i>
+
+            <span>
+              Searching products...
+            </span>
+
           </div>
+        )}
 
-          <div className="sovcat" data-cat="burgers">
-            <img src="/img/menu/1.jpg" alt="Burgers" />
-            Burgers
-          </div>
+        {/* =================================================
+            RESULTS
+        ================================================= */}
 
-          <div className="sovcat" data-cat="pizza">
-            <img src="/img/menu/2.jpg" alt="Pizza" />
-            Pizza
-          </div>
+        {!loading &&
+          searched &&
+          results.length > 0 && (
+            <div className="search-results">
 
-          <div className="sovcat" data-cat="chicken">
-            <img src="/img/menu/3.jpg" alt="Chicken" />
-            Chicken
-          </div>
+              <div className="search-result-count">
+                {results.length} result
+                {results.length !== 1
+                  ? "s"
+                  : ""}
+              </div>
 
-          <div className="sovcat" data-cat="wraps">
-            <img src="/img/menu/4.jpg" alt="Wraps" />
-            Wraps
-          </div>
+              {results.map((result) => {
 
-          <div className="sovcat" data-cat="pasta">
-            <img src="/img/menu/5.jpg" alt="Pasta" />
-            Pasta
-          </div>
+                const price =
+                  getPrice(result);
 
-          <div className="sovcat" data-cat="desserts">
-            <img src="/img/menu/6.jpg" alt="Desserts" />
-            Desserts
-          </div>
+                const oldPrice =
+                  getOldPrice(result);
 
-        </div>
+                const image =
+                  getImage(result);
 
-        {/* Trending Searches */}
-        <div className="sovtrend">
+                return (
+                  <div
+                    key={`${result.product_id}-${result.variant_id || "product"}`}
+                    className="search-result"
+                    onClick={() =>
+                      handleResultClick(result)
+                    }
+                  >
 
-          <p>
-            <i
-              className="fas fa-fire me-1"
-              style={{ color: "var(--secondary)" }}
-            ></i>
-            Trending Searches
-          </p>
+                    {/* IMAGE */}
 
-          <span
-            className="ttag"
-            onClick={() => handleTrendingClick("Smash Burger")}
-          >
-            Smash Burger
-          </span>
+                    <div className="search-result-image">
 
-          <span
-            className="ttag"
-            onClick={() => handleTrendingClick("Nashville Chicken")}
-          >
-            Nashville Chicken
-          </span>
+                      <img
+                        src={image}
+                        alt={
+                          result.variant_name ||
+                          result.product_name
+                        }
+                        onError={(e) => {
+                          e.currentTarget.src =
+                            "/img/placeholder.jpg";
+                        }}
+                      />
 
-          <span
-            className="ttag"
-            onClick={() => handleTrendingClick("Truffle Pizza")}
-          >
-            Truffle Pizza
-          </span>
+                    </div>
 
-          <span
-            className="ttag"
-            onClick={() => handleTrendingClick("Lava Cake")}
-          >
-            Lava Cake
-          </span>
+                    {/* INFORMATION */}
 
-          <span
-            className="ttag"
-            onClick={() => handleTrendingClick("Loaded Fries")}
-          >
-            Loaded Fries
-          </span>
+                    <div className="search-result-info">
 
-          <span
-            className="ttag"
-            onClick={() => handleTrendingClick("Mango Shake")}
-          >
-            Mango Shake
-          </span>
+                      <h5>
+                        {result.product_name}
+                      </h5>
 
-        </div>
+                      {result.variant_name && (
+                        <div className="search-variant">
+                          {result.variant_name}
+                        </div>
+                      )}
+
+                      <div className="search-details">
+
+                        {result.variant_code && (
+                          <span>
+                            <b>Code:</b>{" "}
+                            {result.variant_code}
+                          </span>
+                        )}
+
+                        {result.part_number && (
+                          <span>
+                            <b>Part:</b>{" "}
+                            {result.part_number}
+                          </span>
+                        )}
+
+                      </div>
+
+                      <div className="search-bottom">
+
+                        <div className="search-price">
+
+                          ₹
+                          {Number(
+                            price
+                          ).toLocaleString(
+                            "en-IN"
+                          )}
+
+                          {oldPrice !== null &&
+                            Number(oldPrice) >
+                              Number(price) && (
+                              <del>
+                                ₹
+                                {Number(
+                                  oldPrice
+                                ).toLocaleString(
+                                  "en-IN"
+                                )}
+                              </del>
+                            )}
+
+                        </div>
+
+                        {result.variant_stock !==
+                          undefined && (
+                          <span
+                            className={
+                              Number(
+                                result.variant_stock
+                              ) > 0
+                                ? "search-in-stock"
+                                : "search-out-stock"
+                            }
+                          >
+                            {Number(
+                              result.variant_stock
+                            ) > 0
+                              ? "In Stock"
+                              : "Out of Stock"}
+                          </span>
+                        )}
+
+                      </div>
+
+                    </div>
+
+                    {/* ACTION */}
+
+                    <div className="search-result-action">
+
+                      {result.pdf_path && (
+                        <button
+                          type="button"
+                          className="search-pdf"
+                          title="View PDF"
+                          onClick={(e) =>
+                            handlePdfClick(
+                              e,
+                              result.pdf_path!
+                            )
+                          }
+                        >
+                          <i className="fas fa-file-pdf"></i>
+                        </button>
+                      )}
+
+                      <i className="fas fa-chevron-right"></i>
+
+                    </div>
+
+                  </div>
+                );
+              })}
+
+            </div>
+          )}
+
+        {/* =================================================
+            NO RESULT
+        ================================================= */}
+
+        {!loading &&
+          searched &&
+          results.length === 0 && (
+            <div className="search-empty">
+
+              <div className="search-empty-icon">
+                <i className="fas fa-search"></i>
+              </div>
+
+              <h5>
+                No products found
+              </h5>
+
+              <p>
+                Try searching by product name,
+                variant code or part number.
+              </p>
+
+            </div>
+          )}
 
       </div>
     </div>

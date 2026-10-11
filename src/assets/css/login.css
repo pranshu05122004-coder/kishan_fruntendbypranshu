@@ -1,0 +1,1497 @@
+/* =========================================================
+   INDUSTRIAL MACHINE LOGIN
+   RED + OFF WHITE
+========================================================= */
+
+.machine-login {
+  --red: #c62828;
+  --red-dark: #9e1f1f;
+  --red-light: #e44747;
+  --cream: #f7f4ee;
+  --white: #ffffff;
+  --dark: #202020;
+  --muted: #77736d;
+  --border: rgba(32, 32, 32, 0.11);
+
+  position: relative;
+  min-height: calc(100vh - 80px);
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+
+  background:
+    radial-gradient(
+      circle at 12% 50%,
+      rgba(198, 40, 40, 0.08),
+      transparent 30%
+    ),
+    radial-gradient(
+      circle at 88% 30%,
+      rgba(198, 40, 40, 0.05),
+      transparent 25%
+    ),
+    var(--cream);
+
+  color: var(--dark);
+  padding: 90px 6%;
+}
+
+/* =========================================================
+   BACKGROUND GRID
+========================================================= */
+
+.machine-grid {
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    linear-gradient(
+      rgba(32, 32, 32, 0.035) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(32, 32, 32, 0.035) 1px,
+      transparent 1px
+    );
+
+  background-size: 45px 45px;
+
+  mask-image: linear-gradient(
+    to right,
+    black,
+    transparent 80%
+  );
+
+  animation: gridMove 18s linear infinite;
+}
+
+@keyframes gridMove {
+  from {
+    transform: translate(0, 0);
+  }
+
+  to {
+    transform: translate(45px, 45px);
+  }
+}
+
+/* =========================================================
+   RED AMBIENT LIGHT
+========================================================= */
+
+.machine-red-glow {
+  position: absolute;
+
+  width: 500px;
+  height: 500px;
+
+  left: -220px;
+  top: 20%;
+
+  background: rgba(198, 40, 40, 0.09);
+
+  filter: blur(80px);
+
+  border-radius: 50%;
+
+  animation: redBreath 5s ease-in-out infinite;
+}
+
+@keyframes redBreath {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.95);
+  }
+
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+/* =========================================================
+   PARTICLES
+========================================================= */
+
+.tech-particle {
+  position: absolute;
+
+  width: 4px;
+  height: 4px;
+
+  background: var(--red);
+
+  border-radius: 50%;
+
+  box-shadow: 0 0 12px rgba(198, 40, 40, 0.5);
+
+  opacity: 0.45;
+
+  animation: particleFloat 7s ease-in-out infinite;
+}
+
+.p1 {
+  left: 8%;
+  top: 25%;
+}
+
+.p2 {
+  left: 30%;
+  top: 70%;
+  animation-delay: 1s;
+}
+
+.p3 {
+  left: 47%;
+  top: 18%;
+  animation-delay: 2s;
+}
+
+.p4 {
+  right: 35%;
+  top: 78%;
+  animation-delay: 3s;
+}
+
+.p5 {
+  right: 8%;
+  top: 22%;
+  animation-delay: 4s;
+}
+
+@keyframes particleFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.25;
+  }
+
+  50% {
+    transform: translateY(-25px);
+    opacity: 0.8;
+  }
+}
+
+/* =========================================================
+   MAIN CONTAINER
+========================================================= */
+
+.machine-container {
+  position: relative;
+  z-index: 5;
+
+  width: 100%;
+  max-width: 1250px;
+
+  margin: auto;
+
+  display: grid;
+  grid-template-columns: 1fr 0.9fr;
+
+  gap: 90px;
+
+  align-items: center;
+}
+
+/* =========================================================
+   LEFT INTRO
+========================================================= */
+
+.machine-intro {
+  position: relative;
+
+  opacity: 0;
+  transform: translateX(-35px);
+
+  transition:
+    opacity 0.9s ease,
+    transform 0.9s ease;
+}
+
+.is-ready .machine-intro {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* STATUS */
+
+.machine-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 9px 14px;
+
+  border: 1px solid rgba(198, 40, 40, 0.2);
+
+  background: rgba(255, 255, 255, 0.55);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 2px;
+
+  color: var(--red);
+
+  margin-bottom: 25px;
+}
+
+.status-light {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: var(--red);
+
+  box-shadow:
+    0 0 0 4px rgba(198, 40, 40, 0.08),
+    0 0 12px rgba(198, 40, 40, 0.6);
+
+  animation: statusPulse 1.5s infinite;
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.5);
+  }
+}
+
+/* CODE */
+
+.intro-code {
+  font-size: 11px;
+  font-weight: 700;
+
+  letter-spacing: 4px;
+
+  color: #aaa39b;
+
+  margin-bottom: 15px;
+}
+
+/* TITLE */
+
+.machine-intro h1 {
+  margin: 0;
+
+  font-size: clamp(65px, 7vw, 105px);
+
+  line-height: 0.82;
+
+  font-weight: 800;
+
+  letter-spacing: -5px;
+
+  text-transform: uppercase;
+}
+
+.machine-intro h1 span {
+  color: var(--red);
+}
+
+/* TITLE LINE */
+
+.intro-line {
+  display: flex;
+  gap: 5px;
+
+  margin: 28px 0 22px;
+}
+
+.intro-line span {
+  height: 3px;
+
+  background: var(--red);
+}
+
+.intro-line span:nth-child(1) {
+  width: 55px;
+}
+
+.intro-line span:nth-child(2) {
+  width: 15px;
+  opacity: 0.45;
+}
+
+.intro-line span:nth-child(3) {
+  width: 5px;
+  opacity: 0.2;
+}
+
+/* DESCRIPTION */
+
+.machine-intro p {
+  max-width: 390px;
+
+  margin: 0;
+
+  color: var(--muted);
+
+  font-size: 15px;
+
+  line-height: 1.8;
+}
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.machine-stats {
+  display: flex;
+
+  gap: 35px;
+
+  margin-top: 35px;
+}
+
+.machine-stat {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+
+  border-left: 2px solid var(--red);
+
+  padding-left: 12px;
+}
+
+.machine-stat strong {
+  font-size: 17px;
+
+  font-weight: 800;
+}
+
+.machine-stat span {
+  font-size: 9px;
+
+  color: #9b958d;
+
+  letter-spacing: 2px;
+
+  font-weight: 700;
+}
+
+/* =========================================================
+   MACHINE VISUAL
+========================================================= */
+
+.machine-visual {
+  position: absolute;
+
+  width: 280px;
+  height: 280px;
+
+  right: 0;
+  bottom: -80px;
+
+  opacity: 0.75;
+}
+
+/* ORBITS */
+
+.machine-orbit {
+  position: absolute;
+
+  inset: 0;
+
+  border: 1px solid rgba(198, 40, 40, 0.13);
+
+  border-radius: 50%;
+}
+
+.orbit-one {
+  animation: orbitSpin 18s linear infinite;
+}
+
+.orbit-two {
+  inset: 25px;
+
+  animation: orbitSpinReverse 13s linear infinite;
+}
+
+.orbit-three {
+  inset: 55px;
+
+  border-style: dashed;
+
+  animation: orbitSpin 8s linear infinite;
+}
+
+@keyframes orbitSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes orbitSpinReverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* RINGS */
+
+.machine-ring {
+  position: absolute;
+
+  border: 2px solid rgba(198, 40, 40, 0.2);
+
+  border-radius: 50%;
+}
+
+.ring-one {
+  inset: 80px;
+
+  border-top-color: var(--red);
+
+  animation: ringRotate 4s linear infinite;
+}
+
+.ring-two {
+  inset: 93px;
+
+  border-bottom-color: var(--red);
+
+  animation: ringRotateReverse 3s linear infinite;
+}
+
+@keyframes ringRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ringRotateReverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* CORE */
+
+.machine-core {
+  position: absolute;
+
+  width: 100px;
+  height: 100px;
+
+  left: 90px;
+  top: 90px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(198, 40, 40, 0.4);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(198, 40, 40, 0.12),
+      rgba(255, 255, 255, 0.3)
+    );
+
+  box-shadow:
+    0 0 40px rgba(198, 40, 40, 0.08),
+    inset 0 0 25px rgba(198, 40, 40, 0.05);
+
+  animation: corePulse 3s ease-in-out infinite;
+}
+
+@keyframes corePulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.core-inner {
+  width: 58px;
+  height: 58px;
+
+  border-radius: 50%;
+
+  background: var(--red);
+
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow:
+    0 0 25px rgba(198, 40, 40, 0.35);
+
+  animation: coreRotate 8s linear infinite;
+}
+
+.core-inner i {
+  font-size: 24px;
+}
+
+@keyframes coreRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* CORE DOTS */
+
+.core-dot {
+  position: absolute;
+
+  width: 6px;
+  height: 6px;
+
+  background: var(--red);
+
+  border-radius: 50%;
+
+  top: -4px;
+  left: 50%;
+
+  box-shadow: 0 0 10px var(--red);
+}
+
+.dot-two {
+  top: 50%;
+  left: -4px;
+}
+
+.dot-three {
+  top: auto;
+  left: auto;
+  right: -4px;
+  bottom: 20%;
+}
+
+/* MACHINE LABEL */
+
+.machine-label {
+  position: absolute;
+
+  font-size: 8px;
+
+  letter-spacing: 3px;
+
+  font-weight: 800;
+
+  color: #aaa39b;
+}
+
+.label-top {
+  top: 58px;
+  left: 108px;
+}
+
+.label-bottom {
+  bottom: 55px;
+  left: 107px;
+}
+
+/* CONNECTORS */
+
+.machine-connector {
+  position: absolute;
+
+  width: 60px;
+  height: 1px;
+
+  background: rgba(198, 40, 40, 0.25);
+}
+
+.machine-connector span {
+  position: absolute;
+
+  width: 5px;
+  height: 5px;
+
+  background: var(--red);
+
+  border-radius: 50%;
+
+  top: -2px;
+
+  animation: connectorMove 2s linear infinite;
+}
+
+.connector-one {
+  left: -20px;
+  top: 130px;
+}
+
+.connector-two {
+  right: -20px;
+  top: 150px;
+}
+
+.connector-two span {
+  animation-delay: 1s;
+}
+
+@keyframes connectorMove {
+  from {
+    left: 0;
+  }
+
+  to {
+    left: calc(100% - 5px);
+  }
+}
+
+/* =========================================================
+   LOGIN PANEL WRAPPER
+========================================================= */
+
+.machine-panel-wrapper {
+  position: relative;
+
+  opacity: 0;
+  transform: translateY(40px) scale(0.97);
+
+  transition:
+    opacity 1s ease,
+    transform 1s cubic-bezier(0.16, 1, 0.3, 1);
+
+  transition-delay: 0.25s;
+}
+
+.is-ready .machine-panel-wrapper {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* =========================================================
+   PANEL DECORATION
+========================================================= */
+
+.panel-decoration {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  font-size: 9px;
+
+  letter-spacing: 2px;
+
+  color: #9d978f;
+
+  font-weight: 700;
+
+  margin-bottom: 12px;
+}
+
+.panel-decoration span:first-child {
+  color: var(--red);
+}
+
+.panel-top small {
+  font-size: 9px;
+}
+
+.panel-top b {
+  color: var(--red);
+}
+
+/* =========================================================
+   PANEL
+========================================================= */
+
+.machine-panel {
+  position: relative;
+
+  background: rgba(255, 255, 255, 0.92);
+
+  border: 1px solid rgba(32, 32, 32, 0.1);
+
+  padding: 42px;
+
+  box-shadow:
+    0 35px 80px rgba(32, 32, 32, 0.1),
+    0 5px 15px rgba(32, 32, 32, 0.04);
+
+  overflow: hidden;
+}
+
+/* TOP RED SCANNER */
+
+.machine-panel::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 3px;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--red),
+    transparent
+  );
+
+  background-size: 200% 100%;
+
+  animation: panelScanner 3s linear infinite;
+}
+
+@keyframes panelScanner {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* CORNER */
+
+.machine-panel::after {
+  content: "";
+
+  position: absolute;
+
+  right: -45px;
+  bottom: -45px;
+
+  width: 120px;
+  height: 120px;
+
+  border: 1px solid rgba(198, 40, 40, 0.1);
+
+  transform: rotate(45deg);
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.panel-header {
+  display: flex;
+
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.panel-mini-label {
+  color: #a09a92;
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 2.5px;
+}
+
+.panel-header h2 {
+  margin: 7px 0 0;
+
+  font-size: 40px;
+
+  line-height: 1;
+
+  font-weight: 800;
+
+  letter-spacing: -1.5px;
+}
+
+.panel-header h2 span {
+  color: var(--red);
+}
+
+.panel-icon {
+  width: 48px;
+  height: 48px;
+
+  border: 1px solid rgba(198, 40, 40, 0.2);
+
+  color: var(--red);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 19px;
+
+  animation: fingerprintPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes fingerprintPulse {
+  0%,
+  100% {
+    box-shadow: none;
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 5px rgba(198, 40, 40, 0.04),
+      0 0 20px rgba(198, 40, 40, 0.08);
+  }
+}
+
+/* =========================================================
+   PANEL STATUS
+========================================================= */
+
+.panel-status-line {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  margin: 28px 0 30px;
+
+  font-size: 8px;
+
+  letter-spacing: 1.7px;
+
+  color: #9b958d;
+}
+
+.panel-status-line span {
+  width: 6px;
+  height: 6px;
+
+  background: var(--red);
+
+  border-radius: 50%;
+
+  animation: statusPulse 1.5s infinite;
+}
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.machine-field {
+  margin-bottom: 25px;
+}
+
+.machine-field label {
+  display: block;
+
+  margin-bottom: 10px;
+
+  font-size: 9px;
+
+  letter-spacing: 2px;
+
+  font-weight: 800;
+
+  color: #625e59;
+}
+
+.machine-input-wrap {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  border: 1px solid #ddd8d0;
+
+  background: #fcfbf8;
+
+  transition: 0.3s ease;
+}
+
+.machine-input-wrap:focus-within {
+  border-color: rgba(198, 40, 40, 0.45);
+
+  background: #fff;
+
+  box-shadow:
+    0 8px 25px rgba(198, 40, 40, 0.06);
+}
+
+.machine-input-icon {
+  width: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #a8a29b;
+
+  font-size: 13px;
+
+  transition: 0.3s ease;
+}
+
+.machine-input-wrap:focus-within .machine-input-icon {
+  color: var(--red);
+
+  transform: scale(1.08);
+}
+
+.machine-input-wrap input {
+  flex: 1;
+
+  min-width: 0;
+
+  height: 52px;
+
+  border: none;
+  outline: none;
+
+  background: transparent;
+
+  color: var(--dark);
+
+  font-size: 14px;
+}
+
+.machine-input-wrap input::placeholder {
+  color: #b5b0a9;
+}
+
+/* READY */
+
+.input-ready {
+  padding-right: 14px;
+
+  font-size: 7px;
+
+  letter-spacing: 1px;
+
+  font-weight: 800;
+
+  color: #aaa39b;
+
+  transition: 0.3s;
+}
+
+.machine-input-wrap:focus-within .input-ready {
+  color: var(--red);
+}
+
+/* EYE */
+
+.machine-eye {
+  width: 45px;
+  height: 45px;
+
+  border: none;
+
+  background: transparent;
+
+  color: #aaa39b;
+
+  cursor: pointer;
+
+  transition: 0.25s;
+}
+
+.machine-eye:hover {
+  color: var(--red);
+}
+
+/* INPUT LINE */
+
+.input-line {
+  position: relative;
+
+  height: 2px;
+
+  background: #e5e1db;
+
+  overflow: hidden;
+}
+
+.input-line span {
+  position: absolute;
+
+  left: -100%;
+
+  top: 0;
+
+  width: 100%;
+  height: 100%;
+
+  background: var(--red);
+
+  transition: left 0.5s ease;
+}
+
+.machine-input-wrap:focus-within
+  + .input-line
+  span {
+  left: 0;
+}
+
+/* =========================================================
+   OPTIONS
+========================================================= */
+
+.machine-options {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  margin: 8px 0 25px;
+}
+
+.machine-options span {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  font-size: 8px;
+
+  color: #aaa39b;
+
+  letter-spacing: 1px;
+
+  font-weight: 700;
+}
+
+.machine-options span i {
+  color: var(--red);
+}
+
+.machine-options a {
+  font-size: 9px;
+
+  color: var(--red);
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  text-decoration: none;
+
+  transition: 0.25s;
+}
+
+.machine-options a:hover {
+  letter-spacing: 1.5px;
+}
+
+/* =========================================================
+   LOGIN BUTTON
+========================================================= */
+
+.machine-login-btn {
+  position: relative;
+
+  width: 100%;
+  height: 58px;
+
+  border: none;
+
+  background: var(--red);
+
+  color: white;
+
+  cursor: pointer;
+
+  overflow: hidden;
+
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+
+  transition:
+    transform 0.25s,
+    box-shadow 0.25s;
+}
+
+.machine-login-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 12px 30px rgba(198, 40, 40, 0.25);
+}
+
+.machine-login-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.machine-login-btn:disabled {
+  cursor: not-allowed;
+}
+
+.btn-main-text {
+  position: relative;
+
+  z-index: 2;
+
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  gap: 12px;
+
+  font-size: 11px;
+}
+
+.btn-main-text i {
+  font-size: 12px;
+}
+
+/* BUTTON SCAN */
+
+.btn-scan {
+  position: absolute;
+
+  top: 0;
+  left: -80px;
+
+  width: 50px;
+  height: 100%;
+
+  background: rgba(255, 255, 255, 0.2);
+
+  transform: skewX(-20deg);
+
+  animation: buttonScan 3s infinite;
+}
+
+@keyframes buttonScan {
+  0% {
+    left: -80px;
+  }
+
+  45%,
+  100% {
+    left: 120%;
+  }
+}
+
+/* =========================================================
+   REGISTER
+========================================================= */
+
+.machine-register {
+  display: flex;
+
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: 27px;
+
+  padding-top: 23px;
+
+  border-top: 1px solid #ebe7e1;
+}
+
+.machine-register span {
+  font-size: 8px;
+
+  letter-spacing: 1.5px;
+
+  color: #aaa39b;
+
+  font-weight: 700;
+}
+
+.machine-register a {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  color: var(--dark);
+
+  font-size: 9px;
+
+  font-weight: 800;
+
+  letter-spacing: 1px;
+
+  text-decoration: none;
+
+  transition: 0.25s;
+}
+
+.machine-register a:hover {
+  color: var(--red);
+
+  transform: translateX(3px);
+}
+
+.machine-register a i {
+  color: var(--red);
+}
+
+/* =========================================================
+   SECURITY
+========================================================= */
+
+.machine-security {
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-top: 28px;
+
+  color: #aaa39b;
+
+  font-size: 7px;
+
+  letter-spacing: 1.2px;
+
+  font-weight: 800;
+}
+
+.machine-security i {
+  color: var(--red);
+
+  margin-right: 4px;
+}
+
+.security-divider {
+  width: 1px;
+  height: 10px;
+
+  background: #ddd8d0;
+}
+
+/* =========================================================
+   BOTTOM PANEL
+========================================================= */
+
+.panel-bottom {
+  margin-top: 12px;
+}
+
+/* =========================================================
+   TELEMETRY
+========================================================= */
+
+.machine-telemetry {
+  position: absolute;
+
+  left: 6%;
+  right: 6%;
+  bottom: 20px;
+
+  display: flex;
+
+  justify-content: space-between;
+
+  font-size: 7px;
+
+  letter-spacing: 1.5px;
+
+  color: #aaa39b;
+
+  font-weight: 700;
+
+  z-index: 5;
+}
+
+.machine-telemetry i {
+  color: var(--red);
+
+  margin-right: 5px;
+
+  animation: statusPulse 1.5s infinite;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1050px) {
+  .machine-container {
+    gap: 50px;
+  }
+
+  .machine-visual {
+    opacity: 0.35;
+    right: -30px;
+  }
+
+  .machine-intro h1 {
+    font-size: 75px;
+  }
+}
+
+@media (max-width: 850px) {
+  .machine-login {
+    padding: 60px 20px 80px;
+  }
+
+  .machine-container {
+    grid-template-columns: 1fr;
+
+    max-width: 600px;
+
+    gap: 50px;
+  }
+
+  .machine-intro {
+    text-align: center;
+  }
+
+  .machine-status {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .machine-intro h1 {
+    font-size: 75px;
+  }
+
+  .intro-line {
+    justify-content: center;
+  }
+
+  .machine-intro p {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .machine-stats {
+    justify-content: center;
+  }
+
+  .machine-visual {
+    display: none;
+  }
+
+  .machine-telemetry span:nth-child(2),
+  .machine-telemetry span:nth-child(3) {
+    display: none;
+  }
+
+  .machine-telemetry {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 520px) {
+  .machine-login {
+    min-height: 100vh;
+
+    padding: 45px 15px 70px;
+  }
+
+  .machine-container {
+    gap: 35px;
+  }
+
+  .machine-intro h1 {
+    font-size: 60px;
+
+    letter-spacing: -3px;
+  }
+
+  .machine-intro p {
+    font-size: 13px;
+  }
+
+  .machine-stats {
+    gap: 18px;
+  }
+
+  .machine-stat strong {
+    font-size: 14px;
+  }
+
+  .machine-panel {
+    padding: 28px 20px;
+  }
+
+  .panel-header h2 {
+    font-size: 34px;
+  }
+
+  .machine-options span {
+    display: none;
+  }
+
+  .machine-options {
+    justify-content: flex-end;
+  }
+
+  .machine-register {
+    flex-direction: column;
+
+    gap: 12px;
+
+    align-items: center;
+  }
+
+  .machine-security {
+    gap: 7px;
+
+    font-size: 6px;
+  }
+
+  .machine-telemetry {
+    left: 15px;
+    right: 15px;
+  }
+
+  .machine-telemetry span:last-child {
+    display: none;
+  }
+}
+
+/* =========================================================
+   ACCESS DENIED / LOADING FEEL
+========================================================= */
+
+.machine-login-btn.loading {
+  background: var(--red-dark);
+
+  animation: authButtonPulse 1s infinite;
+}
+
+@keyframes authButtonPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(198, 40, 40, 0);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(198, 40, 40, 0.08),
+      0 0 30px rgba(198, 40, 40, 0.15);
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import "../assets/css/login.css";
 
 const API_URL = "http://localhost:5001";
 
@@ -12,10 +13,29 @@ const Login = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [booted, setBooted] = useState(false);
+  const [systemState, setSystemState] = useState("INITIALIZING");
 
-  // ==========================================
-  // INPUT CHANGE
-  // ==========================================
+  useEffect(() => {
+    const timer1 = setTimeout(() => {
+      setSystemState("SYSTEM ONLINE");
+    }, 700);
+
+    const timer2 = setTimeout(() => {
+      setSystemState("ACCESS PANEL READY");
+    }, 1400);
+
+    const timer3 = setTimeout(() => {
+      setBooted(true);
+    }, 200);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -28,18 +48,10 @@ const Login = () => {
     }));
   };
 
-  // ==========================================
-  // LOGIN
-  // ==========================================
-
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ) => {
     e.preventDefault();
-
-    // ========================================
-    // VALIDATION
-    // ========================================
 
     const email = formData.email.trim().toLowerCase();
     const password = formData.password;
@@ -51,453 +63,427 @@ const Login = () => {
 
     try {
       setLoading(true);
+      setSystemState("AUTHENTICATING...");
 
-      // ========================================
-      // API REQUEST
-      // ========================================
-
-      const response = await fetch(
-        `${API_URL}/api/login`,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type": "application/json",
-          },
-
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/api/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
 
       const data = await response.json();
 
-      console.log(
-        "Login response:",
-        data
-      );
-
-      // ========================================
-      // LOGIN FAILED
-      // ========================================
+      console.log("Login response:", data);
 
       if (!response.ok) {
-        alert(
-          data.message ||
-            "Invalid email or password."
-        );
-
+        setSystemState("ACCESS DENIED");
+        alert(data.message || "Invalid email or password.");
         return;
       }
-
-      // ========================================
-      // CHECK TOKEN
-      // ========================================
 
       if (!data.token) {
-        console.error(
-          "Token missing from server:",
-          data
-        );
-
-        alert(
-          "Login failed: token not received from server."
-        );
-
+        console.error("Token missing from server:", data);
+        setSystemState("TOKEN ERROR");
+        alert("Login failed: token not received from server.");
         return;
       }
-
-      // ========================================
-      // CHECK USER
-      // ========================================
 
       if (!data.user) {
-        console.error(
-          "User data missing from server:",
-          data
-        );
-
-        alert(
-          "Login failed: user data not received from server."
-        );
-
+        console.error("User data missing from server:", data);
+        setSystemState("USER DATA ERROR");
+        alert("Login failed: user data not received from server.");
         return;
       }
 
-      // ========================================
-      // SAVE TOKEN
-      // ========================================
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      localStorage.setItem(
-        "token",
-        data.token
-      );
+      console.log("Token saved:", localStorage.getItem("token"));
+      console.log("User saved:", localStorage.getItem("user"));
 
-      // ========================================
-      // SAVE USER
-      // ========================================
+      window.dispatchEvent(new Event("authChanged"));
 
-      localStorage.setItem(
-        "user",
-        JSON.stringify(data.user)
-      );
+      setSystemState("ACCESS GRANTED");
 
-      // ========================================
-      // VERIFY DATA
-      // ========================================
-
-      console.log(
-        "Token saved:",
-        localStorage.getItem("token")
-      );
-
-      console.log(
-        "User saved:",
-        localStorage.getItem("user")
-      );
-
-      // ========================================
-      // IMPORTANT
-      // NAVBAR KO BATANA
-      // ========================================
-
-      window.dispatchEvent(
-        new Event("authChanged")
-      );
-
-      console.log(
-        "✅ authChanged event dispatched"
-      );
-
-      // ========================================
-      // LOGIN SUCCESS
-      // ========================================
-
-      alert(
-        "Login successful! 🎉"
-      );
-
-      // ========================================
-      // GO HOME
-      // ========================================
-
-      navigate("/", {
-        replace: true,
-      });
-
+      setTimeout(() => {
+        alert("Login successful! 🎉");
+        navigate("/", { replace: true });
+      }, 500);
     } catch (error) {
-      console.error(
-        "❌ Login Error:",
-        error
-      );
+      console.error("❌ Login Error:", error);
+
+      setSystemState("CONNECTION ERROR");
 
       alert(
         "Server se connect nahi ho pa raha hai!\n\n" +
-        "Please make sure backend server is running on port 5001."
+          "Please make sure backend server is running on port 5001."
       );
-
     } finally {
       setLoading(false);
     }
   };
 
-  // ==========================================
-  // UI
-  // ==========================================
-
   return (
-    <>
-      <style>{`
+    <section className={`machine-login ${booted ? "is-ready" : ""}`}>
+      {/* BACKGROUND GRID */}
+      <div className="machine-grid"></div>
 
-        .login-section {
-          min-height: 80vh;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 80px 20px;
-          background: #f8f6f1;
-        }
+      {/* AMBIENT RED LIGHT */}
+      <div className="machine-red-glow"></div>
 
-        .login-container {
-          width: 100%;
-          max-width: 500px;
-        }
+      {/* FLOATING TECH PARTICLES */}
+      <span className="tech-particle p1"></span>
+      <span className="tech-particle p2"></span>
+      <span className="tech-particle p3"></span>
+      <span className="tech-particle p4"></span>
+      <span className="tech-particle p5"></span>
 
-        .login-header {
-          text-align: center;
-          margin-bottom: 35px;
-        }
+      <div className="machine-container">
 
-        .login-label {
-          display: inline-block;
-          color: #e63946;
-          font-size: 13px;
-          font-weight: 700;
-          letter-spacing: 3px;
-          margin-bottom: 12px;
-        }
+        {/* =========================================
+            LEFT SIDE
+        ========================================= */}
+        <div className="machine-intro">
 
-        .login-header h2 {
-          margin: 0;
-          color: #222;
-          font-size: 38px;
-          font-weight: 700;
-          line-height: 1.2;
-        }
+          <div className="machine-status">
+            <span className="status-light"></span>
+            <span>{systemState}</span>
+          </div>
 
-        .login-header h2 span {
-          color: #e63946;
-        }
+          <div className="intro-code">
+            AUTH / 04
+          </div>
 
-        .login-line {
-          width: 60px;
-          height: 3px;
-          background: #e63946;
-          margin: 18px auto;
-        }
+          <h1>
+            Welcome
+            <br />
+            <span>Back.</span>
+          </h1>
 
-        .login-header p {
-          margin: 0;
-          color: #777;
-          font-size: 15px;
-          line-height: 1.6;
-        }
+          <div className="intro-line">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
 
-        .login-card {
-          background: #fff;
-          padding: 40px;
-          border-radius: 12px;
-          border-top: 4px solid #e63946;
-          box-shadow:
-            0 10px 35px rgba(0, 0, 0, 0.08);
-        }
+          <p>
+            Secure access to your industrial
+            account, orders and services.
+          </p>
 
-        .form-group {
-          margin-bottom: 22px;
-        }
+          {/* MINI STATS */}
+          <div className="machine-stats">
 
-        .form-group label {
-          display: block;
-          margin-bottom: 8px;
-          color: #333;
-          font-size: 14px;
-          font-weight: 600;
-        }
+            <div className="machine-stat">
+              <strong>01</strong>
+              <span>SECURE</span>
+            </div>
 
-        .form-group input {
-          width: 100%;
-          box-sizing: border-box;
-          padding: 14px 16px;
-          border: 1px solid #ddd;
-          border-radius: 6px;
-          outline: none;
-          font-size: 15px;
-          color: #333;
-          background: #fff;
-        }
+            <div className="machine-stat">
+              <strong>24/7</strong>
+              <span>ACCESS</span>
+            </div>
 
-        .form-group input:focus {
-          border-color: #e63946;
-          box-shadow:
-            0 0 0 3px rgba(230, 57, 70, 0.12);
-        }
-
-        .forgot-password {
-          text-align: right;
-          margin-bottom: 25px;
-        }
-
-        .forgot-password a {
-          color: #e63946;
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .forgot-password a:hover {
-          text-decoration: underline;
-        }
-
-        .login-btn {
-          width: 100%;
-          padding: 15px;
-          border: none;
-          border-radius: 6px;
-          background: #e63946;
-          color: #fff;
-          font-size: 16px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: 0.2s;
-        }
-
-        .login-btn:hover:not(:disabled) {
-          background: #c92f3b;
-        }
-
-        .login-btn:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        .register-link {
-          text-align: center;
-          margin-top: 25px;
-          color: #777;
-          font-size: 14px;
-        }
-
-        .register-link a {
-          color: #e63946;
-          font-weight: 700;
-          text-decoration: none;
-          margin-left: 5px;
-        }
-
-        .register-link a:hover {
-          text-decoration: underline;
-        }
-
-        @media (max-width: 600px) {
-
-          .login-section {
-            padding: 50px 15px;
-          }
-
-          .login-header h2 {
-            font-size: 32px;
-          }
-
-          .login-card {
-            padding: 25px 20px;
-          }
-
-        }
-
-      `}</style>
-
-      <section className="login-section">
-
-        <div className="login-container">
-
-          {/* =====================================
-              HEADER
-          ===================================== */}
-
-          <div className="login-header">
-
-            <span className="login-label">
-              WELCOME BACK
-            </span>
-
-            <h2>
-              Login to{" "}
-              <span>Your Account</span>
-            </h2>
-
-            <div className="login-line"></div>
-
-            <p>
-              Enter your details to access
-              your account.
-            </p>
+            <div className="machine-stat">
+              <strong>100%</strong>
+              <span>ONLINE</span>
+            </div>
 
           </div>
 
           {/* =====================================
-              CARD
+              INDUSTRIAL MACHINE
           ===================================== */}
+          <div className="machine-visual">
 
-          <div className="login-card">
+            <div className="machine-orbit orbit-one"></div>
+            <div className="machine-orbit orbit-two"></div>
+            <div className="machine-orbit orbit-three"></div>
 
-            <form onSubmit={handleSubmit}>
+            <div className="machine-ring ring-one"></div>
+            <div className="machine-ring ring-two"></div>
 
-              {/* EMAIL */}
+            <div className="machine-core">
 
-              <div className="form-group">
-
-                <label htmlFor="email">
-                  Email Address *
-                </label>
-
-                <input
-                  id="email"
-                  type="email"
-                  name="email"
-                  placeholder="Enter your email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  autoComplete="email"
-                  required
-                />
-
+              <div className="core-inner">
+                <i className="fas fa-gears"></i>
               </div>
 
-              {/* PASSWORD */}
+              <span className="core-dot"></span>
+              <span className="core-dot dot-two"></span>
+              <span className="core-dot dot-three"></span>
 
-              <div className="form-group">
+            </div>
 
-                <label htmlFor="password">
-                  Password *
-                </label>
+            <div className="machine-label label-top">
+              SYSTEM
+            </div>
 
-                <input
-                  id="password"
-                  type="password"
-                  name="password"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  autoComplete="current-password"
-                  required
-                />
+            <div className="machine-label label-bottom">
+              READY
+            </div>
 
-              </div>
+            <div className="machine-connector connector-one">
+              <span></span>
+            </div>
 
-              {/* FORGOT PASSWORD */}
-
-              <div className="forgot-password">
-
-                <Link to="/forgot-password">
-                  Forgot Password?
-                </Link>
-
-              </div>
-
-              {/* LOGIN BUTTON */}
-
-              <button
-                type="submit"
-                className="login-btn"
-                disabled={loading}
-              >
-                {loading
-                  ? "Logging in..."
-                  : "Login"}
-              </button>
-
-            </form>
-
-            {/* REGISTER */}
-
-            <div className="register-link">
-
-              Don't have an account?
-
-              <Link to="/register">
-                Create Account
-              </Link>
-
+            <div className="machine-connector connector-two">
+              <span></span>
             </div>
 
           </div>
 
         </div>
 
-      </section>
-    </>
+        {/* =========================================
+            LOGIN PANEL
+        ========================================= */}
+        <div className="machine-panel-wrapper">
+
+          <div className="panel-decoration panel-top">
+            <span></span>
+            <small>ACCESS PANEL</small>
+            <b>04</b>
+          </div>
+
+          <div className="machine-panel">
+
+            {/* PANEL HEADER */}
+            <div className="panel-header">
+
+              <div>
+                <span className="panel-mini-label">
+                  USER AUTHENTICATION
+                </span>
+
+                <h2>
+                  Sign <span>In</span>
+                </h2>
+              </div>
+
+              <div className="panel-icon">
+                <i className="fas fa-fingerprint"></i>
+              </div>
+
+            </div>
+
+            <div className="panel-status-line">
+              <span></span>
+              <small>
+                {loading
+                  ? "VERIFYING CREDENTIALS"
+                  : "SECURE CONNECTION ESTABLISHED"}
+              </small>
+            </div>
+
+            {/* FORM */}
+            <form onSubmit={handleSubmit}>
+
+              {/* EMAIL */}
+              <div className="machine-field">
+
+                <label htmlFor="email">
+                  EMAIL ADDRESS
+                </label>
+
+                <div className="machine-input-wrap">
+
+                  <span className="machine-input-icon">
+                    <i className="fas fa-envelope"></i>
+                  </span>
+
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    autoComplete="email"
+                    required
+                  />
+
+                  <span className="input-ready">
+                    {formData.email ? "READY" : "ID"}
+                  </span>
+
+                </div>
+
+                <div className="input-line">
+                  <span></span>
+                </div>
+
+              </div>
+
+              {/* PASSWORD */}
+              <div className="machine-field">
+
+                <label htmlFor="password">
+                  PASSWORD
+                </label>
+
+                <div className="machine-input-wrap">
+
+                  <span className="machine-input-icon">
+                    <i className="fas fa-lock"></i>
+                  </span>
+
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    autoComplete="current-password"
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    className="machine-eye"
+                    onClick={() =>
+                      setShowPassword(!showPassword)
+                    }
+                    aria-label="Toggle password visibility"
+                  >
+                    <i
+                      className={`fas ${
+                        showPassword
+                          ? "fa-eye-slash"
+                          : "fa-eye"
+                      }`}
+                    ></i>
+                  </button>
+
+                </div>
+
+                <div className="input-line">
+                  <span></span>
+                </div>
+
+              </div>
+
+              {/* FORGOT */}
+              <div className="machine-options">
+
+                <span>
+                  <i className="fas fa-shield-halved"></i>
+                  SECURE SESSION
+                </span>
+
+                <Link to="/forgot-password">
+                  FORGOT PASSWORD?
+                </Link>
+
+              </div>
+
+              {/* LOGIN BUTTON */}
+              <button
+                type="submit"
+                className={`machine-login-btn ${
+                  loading ? "loading" : ""
+                }`}
+                disabled={loading}
+              >
+
+                <span className="btn-main-text">
+
+                  {loading ? (
+                    <>
+                      <i className="fas fa-circle-notch fa-spin"></i>
+                      AUTHENTICATING...
+                    </>
+                  ) : (
+                    <>
+                      AUTHORIZE ACCESS
+                      <i className="fas fa-arrow-right"></i>
+                    </>
+                  )}
+
+                </span>
+
+                <span className="btn-scan"></span>
+
+              </button>
+
+            </form>
+
+            {/* REGISTER */}
+            <div className="machine-register">
+
+              <span>NEW TO THE SYSTEM?</span>
+
+              <Link to="/register">
+                CREATE ACCOUNT
+                <i className="fas fa-arrow-up-right-from-square"></i>
+              </Link>
+
+            </div>
+
+            {/* SECURITY FOOTER */}
+            <div className="machine-security">
+
+              <span>
+                <i className="fas fa-lock"></i>
+                ENCRYPTED
+              </span>
+
+              <span className="security-divider"></span>
+
+              <span>
+                <i className="fas fa-circle-check"></i>
+                VERIFIED
+              </span>
+
+              <span className="security-divider"></span>
+
+              <span>
+                <i className="fas fa-bolt"></i>
+                ONLINE
+              </span>
+
+            </div>
+
+          </div>
+
+          <div className="panel-decoration panel-bottom">
+            <span>INDUSTRIAL DOCTOR</span>
+            <span>AUTH NODE / 04</span>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* BOTTOM TELEMETRY */}
+      <div className="machine-telemetry">
+
+        <span>
+          <i className="fas fa-circle"></i>
+          SYSTEM OPERATIONAL
+        </span>
+
+        <span>
+          ENCRYPTION: AES-256
+        </span>
+
+        <span>
+          NODE: ID-04
+        </span>
+
+        <span>
+          STATUS: ONLINE
+        </span>
+
+      </div>
+
+    </section>
   );
 };
 
