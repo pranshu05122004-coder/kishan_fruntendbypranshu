@@ -1,3 +1,4 @@
+import { API_BASE } from "../config/api";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -75,7 +76,7 @@ const Products: React.FC = () => {
         setError("");
 
         const response = await fetch(
-          "http://localhost:5001/api/products"
+          `${API_BASE}/products`
         );
 
         const data = await response.json();

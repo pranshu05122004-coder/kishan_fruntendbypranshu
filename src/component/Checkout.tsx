@@ -1,7 +1,8 @@
+import { API_BASE } from "../config/api";
 import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-const API_BASE = "http://localhost:5001/api";
+
 
 interface Variant {
   id: number;

@@ -1,8 +1,9 @@
+import { API_URL } from "../config/api";
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../assets/css/login.css";
 
-const API_URL = "http://localhost:5001";
+
 
 const Login = () => {
   const navigate = useNavigate();

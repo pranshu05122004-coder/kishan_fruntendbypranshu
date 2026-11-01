@@ -1,3 +1,4 @@
+import { API_BASE } from "../config/api";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../assets/css/nav.css";
@@ -108,7 +109,7 @@ function SearchOverlay({
       setSearched(true);
 
       const response = await fetch(
-        `http://localhost:5001/api/products/search?q=${encodeURIComponent(
+        `${API_BASE}/products/search?q=${encodeURIComponent(
           query
         )}`
       );

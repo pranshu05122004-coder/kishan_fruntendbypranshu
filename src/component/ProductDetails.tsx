@@ -1,3 +1,4 @@
+import { API_URL, API_BASE } from "../config/api";
 import { useEffect, useState } from "react";
 import {
   useNavigate,
@@ -115,7 +116,7 @@ const ProductDetails = () => {
         );
 
         const response = await fetch(
-          `http://localhost:5001/api/products/${id}`
+          `${API_BASE}/products/${id}`
         );
 
         const data =
@@ -291,9 +292,9 @@ const ProductDetails = () => {
           "http"
         )
         ? selectedVariant.pdf_path
-        : `http://localhost:5001${selectedVariant.pdf_path}`
+        : `${API_URL}${selectedVariant.pdf_path}`
       : product
-      ? `http://localhost:5001/pdf/${product.id}.pdf`
+      ? `${API_URL}/pdf/${product.id}.pdf`
       : null;
 
   // =====================================

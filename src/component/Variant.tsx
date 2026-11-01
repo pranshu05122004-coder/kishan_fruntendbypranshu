@@ -1,3 +1,4 @@
+import { API_URL, API_BASE } from "../config/api";
 import React, { useEffect, useState } from "react";
 import {
   useParams,
@@ -53,7 +54,7 @@ const Variant: React.FC = () => {
         console.log("🔥 Product ID:", id);
 
         const response = await fetch(
-          `http://localhost:5001/api/products/${id}`
+          `${API_BASE}/products/${id}`
         );
 
         const data = await response.json();
@@ -145,7 +146,7 @@ const Variant: React.FC = () => {
     const pdfUrl =
       variant.pdf_path.startsWith("http")
         ? variant.pdf_path
-        : `http://localhost:5001${variant.pdf_path}`;
+        : `${API_URL}${variant.pdf_path}`;
 
     console.log(
       "📄 Opening PDF:",
