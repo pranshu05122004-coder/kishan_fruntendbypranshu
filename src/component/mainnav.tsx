@@ -119,6 +119,13 @@ function Mainnav() {
         }`}
         id="nav"
       >
+        {/* Diwali decorative fairy lights */}
+        <div className="diwali-light-string" aria-hidden="true">
+          {Array.from({ length: 18 }).map((_, index) => (
+            <span key={index} className="diwali-bulb"></span>
+          ))}
+        </div>
+
         {/* Animated background glow */}
         <div className="nav-glow nav-glow-one"></div>
         <div className="nav-glow nav-glow-two"></div>
@@ -155,6 +162,10 @@ function Mainnav() {
                 <div className="bsub">
                   <span className="sub-line"></span>
                   Industrial Automation Solutions
+                </div>
+
+                <div className="diwali-greeting" aria-label="Happy Diwali">
+                  <span aria-hidden="true">🪔</span> Happy Diwali
                 </div>
               </div>
             </div>
@@ -444,6 +455,17 @@ function Mainnav() {
               </a>
             </div>
           </div>
+        </div>
+
+        {/* Hanging Diwali toran below the navbar */}
+        <div className="diwali-bottom-decor" aria-hidden="true">
+          <div className="diwali-toran-string"></div>
+          <div className="diwali-flower-row">
+            {Array.from({ length: 21 }).map((_, index) => (
+              <span key={index} className="diwali-toran-flower"></span>
+            ))}
+          </div>
+          <div className="diwali-center-diya">🪔</div>
         </div>
       </nav>
 
@@ -1340,6 +1362,257 @@ function Mainnav() {
             animation: none !important;
             transition: none !important;
           }
+        }
+
+        /* ==========================================
+           DIWALI FESTIVE DECORATION
+        ========================================== */
+
+        .diwali-light-string {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 14px;
+          display: flex;
+          justify-content: space-around;
+          align-items: flex-start;
+          z-index: 10;
+          pointer-events: none;
+        }
+
+        .diwali-light-string::before {
+          content: "";
+          position: absolute;
+          top: 2px;
+          left: 0;
+          width: 100%;
+          height: 8px;
+          border-top: 1px solid rgba(190, 139, 38, 0.75);
+          border-radius: 50%;
+        }
+
+        .diwali-bulb {
+          position: relative;
+          z-index: 1;
+          margin-top: 5px;
+          width: 7px;
+          height: 9px;
+          flex: 0 0 7px;
+          border-radius: 50% 50% 45% 45%;
+          background: #ffc928;
+          box-shadow: 0 0 7px rgba(255, 193, 7, 0.9), 0 0 14px rgba(255, 152, 0, 0.55);
+          animation: diwaliBlink 1.6s ease-in-out infinite alternate;
+        }
+
+        .diwali-bulb:nth-child(3n) {
+          background: #ff7043;
+          box-shadow: 0 0 8px rgba(255, 112, 67, 0.85), 0 0 14px rgba(255, 112, 67, 0.4);
+          animation-delay: -0.5s;
+        }
+
+        .diwali-bulb:nth-child(3n + 1) {
+          animation-delay: -1s;
+        }
+
+        @keyframes diwaliBlink {
+          from { opacity: 0.5; filter: brightness(0.85); }
+          to { opacity: 1; filter: brightness(1.35); }
+        }
+
+        .diwali-greeting {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 5px;
+          color: #a66b0c;
+          font-size: 9px;
+          font-weight: 800;
+          letter-spacing: 1.15px;
+          text-transform: uppercase;
+          white-space: nowrap;
+          animation: diyaGlow 2.2s ease-in-out infinite alternate;
+        }
+
+        .diwali-greeting span {
+          font-size: 11px;
+          line-height: 1;
+        }
+
+        @keyframes diyaGlow {
+          from { text-shadow: 0 0 2px rgba(255, 193, 7, 0.25); }
+          to { text-shadow: 0 0 8px rgba(255, 179, 0, 0.75); }
+        }
+
+        /* Keep the festive details subtle on smaller screens */
+        @media (max-width: 1200px) {
+          .diwali-greeting {
+            font-size: 8px;
+            letter-spacing: 0.8px;
+          }
+        }
+
+        @media (max-width: 500px) {
+          .diwali-light-string {
+            height: 11px;
+          }
+
+          .diwali-bulb {
+            width: 5px;
+            height: 7px;
+            flex-basis: 5px;
+          }
+
+          .diwali-greeting {
+            margin-top: 4px;
+            font-size: 7px;
+            letter-spacing: 0.55px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .diwali-bulb,
+          .diwali-greeting {
+            animation: none !important;
+          }
+        }
+
+
+        /* ==========================================
+           HANGING DIWALI TORAN — BELOW NAVBAR
+        ========================================== */
+
+        .diwali-bottom-decor {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: -25px;
+          height: 29px;
+          z-index: 1;
+          pointer-events: none;
+          overflow: visible;
+        }
+
+        /* A fine curved golden thread */
+        .diwali-toran-string {
+          position: absolute;
+          top: -9px;
+          left: -1%;
+          width: 102%;
+          height: 25px;
+          border-bottom: 1.5px solid rgba(177, 119, 24, .72);
+          border-radius: 0 0 50% 50%;
+          filter: drop-shadow(0 1px 2px rgba(255, 183, 40, .3));
+        }
+
+        .diwali-flower-row {
+          position: absolute;
+          inset: 0 2%;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+        }
+
+        .diwali-toran-flower {
+          position: relative;
+          display: block;
+          width: 10px;
+          height: 10px;
+          margin-top: 8px;
+          flex: 0 0 10px;
+          border-radius: 50%;
+          background: radial-gradient(circle at 35% 30%, #ffe7a0 0 13%, #ffbd35 30%, #e88713 72%, #b85c12 100%);
+          box-shadow: 0 1px 4px rgba(174, 105, 15, .35);
+        }
+
+        .diwali-toran-flower::before,
+        .diwali-toran-flower::after {
+          content: "";
+          position: absolute;
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: #e9a12a;
+          top: 2px;
+        }
+
+        .diwali-toran-flower::before { left: -3px; }
+        .diwali-toran-flower::after { right: -3px; }
+
+        .diwali-toran-flower:nth-child(3n) {
+          background: radial-gradient(circle at 35% 30%, #ffd5c2 0 12%, #e96a43 38%, #a93225 100%);
+        }
+
+        .diwali-toran-flower:nth-child(4n) {
+          transform: translateY(5px) scale(.82);
+        }
+
+        .diwali-center-diya {
+          position: absolute;
+          left: 50%;
+          top: -1px;
+          transform: translateX(-50%);
+          width: 31px;
+          height: 27px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          border-radius: 50%;
+          background: rgba(255, 250, 235, .96);
+          border: 1px solid rgba(207, 151, 45, .48);
+          box-shadow: 0 3px 10px rgba(165, 108, 17, .16), 0 0 12px rgba(255, 190, 65, .2);
+          font-size: 17px;
+          animation: diwaliDiyaGlow 2.4s ease-in-out infinite alternate;
+        }
+
+        @keyframes diwaliDiyaGlow {
+          from { box-shadow: 0 2px 6px rgba(165, 108, 17, .12), 0 0 5px rgba(255, 190, 65, .15); }
+          to { box-shadow: 0 3px 10px rgba(165, 108, 17, .2), 0 0 15px rgba(255, 190, 65, .48); }
+        }
+
+        @media (max-width: 991px) {
+          .diwali-bottom-decor {
+            bottom: -22px;
+            height: 25px;
+          }
+          .diwali-toran-flower {
+            width: 8px;
+            height: 8px;
+            flex-basis: 8px;
+          }
+          .diwali-center-diya {
+            width: 27px;
+            height: 24px;
+            font-size: 15px;
+          }
+        }
+
+        @media (max-width: 500px) {
+          .diwali-bottom-decor {
+            bottom: -19px;
+            height: 22px;
+          }
+          .diwali-flower-row { inset-inline: 1%; }
+          .diwali-toran-flower {
+            width: 6px;
+            height: 6px;
+            flex-basis: 6px;
+            margin-top: 9px;
+          }
+          .diwali-toran-flower::before,
+          .diwali-toran-flower::after {
+            width: 4px;
+            height: 4px;
+          }
+          .diwali-center-diya {
+            width: 23px;
+            height: 21px;
+            font-size: 13px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .diwali-center-diya { animation: none !important; }
         }
       `}</style>
     </>
