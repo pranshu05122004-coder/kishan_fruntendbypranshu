@@ -1,5 +1,6 @@
 
 import { useEffect, useState } from "react";
+import type { CSSProperties } from "react";
 import "../assets/css/hero.css";
 import logo from "../assets/img/Gemini_Generated_Image_3nsnv43nsnv43nsn.png";
 
@@ -25,9 +26,7 @@ function Hero() {
   return (
     <section id="hero" className={loaded ? "hero-loaded" : ""}>
 
-      {/* =====================================
-          GRAND DIWALI CELEBRATION
-      ===================================== */}
+      {/* GRAND DIWALI CELEBRATION */}
 
       {showDiwaliRockets && (
         <div className="diwali-fireworks" aria-hidden="true">
@@ -62,7 +61,7 @@ function Hero() {
                       "#7cff00",
                       "#ffffff",
                     ][i],
-                  }}
+                  } as CSSProperties}
                 />
               ))}
             </div>
@@ -78,7 +77,7 @@ function Hero() {
                   "--x": `${(i * 37) % 100}%`,
                   "--y": `${(i * 23) % 85}%`,
                   "--delay": `${(i % 15) * 0.1}s`,
-                }}
+                } as CSSProperties}
               />
             ))}
           </div>
@@ -93,9 +92,7 @@ function Hero() {
         </div>
       )}
 
-      {/* =====================================
-          BACKGROUND
-      ===================================== */}
+      {/* BACKGROUND */}
 
       <div className="hero-grid"></div>
       <div className="hero-noise"></div>
@@ -122,9 +119,7 @@ function Hero() {
       <div className="tech-line tech-line-2"></div>
       <div className="tech-line tech-line-3"></div>
 
-      {/* =====================================
-          MAIN CONTAINER
-      ===================================== */}
+      {/* MAIN CONTAINER */}
 
       <div className="container hero-container">
         <div className="row align-items-center hero-row">
@@ -276,9 +271,7 @@ function Hero() {
 
           </div>
 
-          {/* =====================================
-              RIGHT VISUAL
-          ===================================== */}
+          {/* RIGHT VISUAL */}
 
           <div className="col-lg-6 hero-right">
 
