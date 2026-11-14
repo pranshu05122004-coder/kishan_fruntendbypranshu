@@ -1,4 +1,4 @@
-import { API_BASE } from "../config/api";
+import { API_BASE, getPdfUrl } from "../config/api";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../assets/css/nav.css";
@@ -157,8 +157,12 @@ function SearchOverlay({
   ) => {
     e.stopPropagation();
 
+    const pdfUrl = getPdfUrl(pdfPath);
+
+    if (!pdfUrl) return;
+
     window.open(
-      pdfPath,
+      pdfUrl,
       "_blank",
       "noopener,noreferrer"
     );

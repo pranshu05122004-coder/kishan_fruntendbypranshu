@@ -1,4 +1,4 @@
-import { API_URL, API_BASE } from "../config/api";
+import { API_BASE, getPdfUrl } from "../config/api";
 import React, { useEffect, useState } from "react";
 import {
   useParams,
@@ -143,10 +143,9 @@ const Variant: React.FC = () => {
       return;
     }
 
-    const pdfUrl =
-      variant.pdf_path.startsWith("http")
-        ? variant.pdf_path
-        : `${API_URL}${variant.pdf_path}`;
+    const pdfUrl = getPdfUrl(variant.pdf_path);
+
+    if (!pdfUrl) return;
 
     console.log(
       "📄 Opening PDF:",

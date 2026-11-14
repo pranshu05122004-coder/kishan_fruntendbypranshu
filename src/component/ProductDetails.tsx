@@ -1,4 +1,4 @@
-import { API_URL, API_BASE } from "../config/api";
+import { API_URL, API_BASE, getPdfUrl } from "../config/api";
 import { useEffect, useState } from "react";
 import {
   useNavigate,
@@ -288,11 +288,7 @@ const ProductDetails = () => {
 
   const pdfUrl =
     selectedVariant?.pdf_path
-      ? selectedVariant.pdf_path.startsWith(
-          "http"
-        )
-        ? selectedVariant.pdf_path
-        : `${API_URL}${selectedVariant.pdf_path}`
+      ? getPdfUrl(selectedVariant.pdf_path)
       : product
       ? `${API_URL}/pdf/${product.id}.pdf`
       : null;
