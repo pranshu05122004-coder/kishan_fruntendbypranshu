@@ -37,6 +37,7 @@ interface Product {
   price: number | string;
   old_price?: number | string | null;
   image: string;
+  pdf_path?: string | null;
   rating: number | string;
   stock: boolean | number;
   variants?: ProductVariant[];
@@ -289,6 +290,8 @@ const ProductDetails = () => {
   const pdfUrl =
     selectedVariant?.pdf_path
       ? getPdfUrl(selectedVariant.pdf_path)
+      : product?.pdf_path
+      ? getPdfUrl(product.pdf_path)
       : product
       ? `${API_URL}/pdf/${product.id}.pdf`
       : null;

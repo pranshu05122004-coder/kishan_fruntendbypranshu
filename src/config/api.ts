@@ -1,3 +1,4 @@
+
 const LOCAL_API_URL = "http://localhost:5001";
 
 const LIVE_API_URL =
@@ -9,7 +10,6 @@ export const API_URL = import.meta.env.DEV
 
 export const API_BASE = `${API_URL}/api`;
 
-// PDF files are stored on the admin backend
 export const PDF_BASE_URL =
   "https://lightslategray-goldfinch-606464.hostingersite.com/customer-pdfs";
 
@@ -20,31 +20,32 @@ export const getPdfUrl = (
 
   const value = pdfPath.trim();
 
-  if (value.startsWith("http://") || value.startsWith("https://")) {
-    try {
-      const parsed = new URL(value);
+  try {
+    const parsed = new URL(value, LOCAL_API_URL);
+    const filename = decodeURIComponent(
+      parsed.pathname.split("/").pop() || ""
+    );
 
-      if (
-        parsed.hostname !== "navajowhite-wolverine-803334.hostingersite.com" &&
-        parsed.hostname !== "lightslategray-goldfinch-606464.hostingersite.com"
-      ) {
-        return value;
-      }
+    if (!filename) return null;
 
-      const filename = parsed.pathname.split("/").pop();
+    const encodedFilename = encodeURIComponent(filename);
 
-      return filename
-        ? `${PDF_BASE_URL}/${encodeURIComponent(decodeURIComponent(filename))}`
-        : null;
-    } catch {
-      return null;
+    // Local testing: use local backend PDF route
+    if (import.meta.env.DEV) {
+      return `${LOCAL_API_URL}/pdf/${encodedFilename}`;
     }
+
+    // Live: use admin PDF server
+    if (
+      parsed.hostname === "navajowhite-wolverine-803334.hostingersite.com" ||
+      parsed.hostname === "lightslategray-goldfinch-606464.hostingersite.com" ||
+      !value.startsWith("http")
+    ) {
+      return `${PDF_BASE_URL}/${encodedFilename}`;
+    }
+
+    return value;
+  } catch {
+    return null;
   }
-
-  const cleanPath = value.split("?")[0].split("#")[0];
-  const filename = cleanPath.split("/").pop();
-
-  return filename
-    ? `${PDF_BASE_URL}/${encodeURIComponent(filename)}`
-    : null;
 };
