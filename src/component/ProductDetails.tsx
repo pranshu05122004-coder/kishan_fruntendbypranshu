@@ -1,4 +1,4 @@
-import { API_URL, API_BASE, getPdfUrl } from "../config/api";
+import { API_BASE, getPdfUrl } from "../config/api";
 import { useEffect, useState } from "react";
 import {
   useNavigate,
@@ -283,19 +283,18 @@ const ProductDetails = () => {
     product?.image ||
     "";
 
-  // =====================================
-  // PDF URL
-  // =====================================
+// =====================================
+// PDF URL
+// =====================================
 
-  const pdfUrl =
-    selectedVariant?.pdf_path
-      ? getPdfUrl(selectedVariant.pdf_path)
-      : product?.pdf_path
-      ? getPdfUrl(product.pdf_path)
-      : product
-      ? `${API_URL}/pdf/${product.id}.pdf`
-      : null;
+const pdfPath =
+  selectedVariant?.pdf_path ||
+  product?.pdf_path ||
+  null;
 
+const pdfUrl = pdfPath
+  ? getPdfUrl(pdfPath)
+  : null;
   // =====================================
   // MORE DETAILS / PDF
   // =====================================
